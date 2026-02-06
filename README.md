@@ -1,5 +1,7 @@
 # 动漫高手3.0
 
+[游戏链接](https://davy-chendy.github.io/anime-master-game/)
+
 ## 引言
 
 todo
