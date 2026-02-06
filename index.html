@@ -27,7 +27,7 @@
       padding: 30px;
     }
 
-    /* ✅ 标题区：用于右上角放“一键重置” */
+    /* ✅ 标题区 */
     .title-bar {
       position: relative;
       margin-bottom: 20px;
@@ -40,6 +40,28 @@
       font-size: 2.5em;
       line-height: 1.2;
     }
+
+    /* ✅ 左上角：分享题库按钮 */
+    .top-left-btn {
+      position: absolute;
+      left: 0;
+      top: 0;
+      padding: 10px 14px;
+      font-size: 0.95em;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: bold;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      white-space: nowrap;
+    }
+    .top-left-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,0.22); }
+    .top-left-btn:active { transform: translateY(0); }
+
+    body.player-locked .top-left-btn { display: none !important; }
 
     /* ✅ 标题右上角重置按钮 */
     .top-reset-btn {
@@ -62,7 +84,6 @@
     .top-reset-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,0.22); }
     .top-reset-btn:active { transform: translateY(0); }
 
-    /* 玩家屏隐藏顶部重置按钮 */
     body.player-locked .top-reset-btn { display: none !important; }
 
     .role-badge {
@@ -197,16 +218,33 @@
       align-items: center;
       justify-content: center;
       background: transparent;
+      min-height: 220px;
     }
 
     .image-wrapper { position: relative; display: inline-block; width: 100%; }
     #gameImage { width: 100%; height: auto; display: block; }
 
+    /* ✅ “加载中...”居中 */
     .loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 16px;
       color: #666;
       font-size: 1.2em;
-      padding: 16px;
-      text-align: center;
+      z-index: 30;
+      pointer-events: none;
+      background: transparent;
+    }
+    .loading-inner { max-width: 560px; }
+    .loading-hint {
+      margin-top: 10px;
+      font-size: 0.95em;
+      color: #8b5e00;
+      line-height: 1.5;
     }
 
     .grid-overlay {
@@ -219,16 +257,28 @@
       grid-template-columns: repeat(9, 1fr);
       grid-template-rows: repeat(5, 1fr);
       pointer-events: none;
+      z-index: 10;
+    }
+
+    /* ✅ 切图黑幕布（防闪+防露） */
+    .curtain {
+      position: absolute;
+      inset: 0;
+      background: #000;
+      z-index: 9;
+      display: none;
     }
 
     .grid-cell {
-      border: none; /* ✅ 不用 border 画网格线 */
-      outline: 1px solid rgba(255, 255, 255, 0.3);  /* ✅ 永远存在的网格线 */
-      outline-offset: -1px;                         /* ✅ 贴边，不扩大格子 */
+      border: none;
+      outline: 1px solid rgba(255, 255, 255, 0.3);
+      outline-offset: -1px;
       cursor: pointer;
       pointer-events: all;
       transition: all 0.25s;
     }
+
+    .no-transition .grid-cell { transition: none !important; }
 
     .grid-cell.selectable:hover { background: rgba(102, 126, 234, 0.3); }
 
@@ -237,28 +287,16 @@
       border: 2px solid #ffc107;
     }
 
-    /* ✅ 给玩家看的“揭示”：必须完全透明，露出原图 */
+    /* ✅ 展示态：主持人/玩家一致（无绿色边框） */
     .grid-cell.revealed {
       background: transparent;
-      border: 2px solid rgba(76, 175, 80, 0.95);
-      box-shadow: inset 0 0 10px rgba(76, 175, 80, 0.35);
+      border: none;
+      box-shadow: none;
     }
 
-    /* ✅ 主持人全图模式提示：仅用于提醒“上一轮揭示过” */
+    /* ✅ 主持人选块模式：提示“上一轮揭示过” */
     .grid-cell.revealed-hint {
       background: rgba(76, 175, 80, 0.55);
-    }
-
-    /* ✅ 随机揭示：同样不加底色，只用边框/阴影 */
-    .grid-cell.random-revealed {
-      background: transparent;
-      border: 2px solid rgba(255, 87, 34, 0.95);
-      box-shadow: inset 0 0 10px rgba(255, 87, 34, 0.30);
-    }
-
-    /* ✅ 随机揭示的主持人提示 */
-    .grid-cell.random-revealed-hint {
-      background: rgba(255, 87, 34, 0.55);
     }
 
     .grid-cell.covered { background: rgba(0, 0, 0, 1); }
@@ -279,6 +317,7 @@
       transition: all 0.2s;
       font-weight: bold;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      white-space: nowrap;
     }
 
     .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3); }
@@ -298,10 +337,7 @@
       border-radius: 10px;
       border-left: 4px solid #2196f3;
     }
-
-    .info-box h3 { color: #1976d2; margin-bottom: 10px; }
     .info-box p { color: #555; line-height: 1.6; }
-
     .info-box a {
       color: #1976d2;
       font-weight: 700;
@@ -315,51 +351,6 @@
       text-align: center;
       font-weight: bold;
       color: #856404;
-    }
-
-    .toggle-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      background: #f8f9fa;
-      border: 1px solid #e5e7eb;
-      padding: 10px 12px;
-      border-radius: 10px;
-      color: #333;
-      font-weight: 600;
-      user-select: none;
-    }
-
-    .toggle-row input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
-      cursor: pointer;
-    }
-
-    /* ✅ 新增：随机数量 +/- 按钮 */
-    .step-btn {
-      width: 28px;
-      height: 28px;
-      border: 1px solid #d1d5db;
-      background: white;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 800;
-      line-height: 1;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-      transition: all 0.15s;
-      user-select: none;
-    }
-    .step-btn:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0,0,0,0.12); }
-    .step-btn:active { transform: translateY(0); }
-    .step-count {
-      min-width: 22px;
-      text-align: center;
-      font-weight: 800;
-      color: #111827;
     }
 
     .config-modal {
@@ -377,12 +368,13 @@
 
     .config-modal.active { display: flex; }
 
+    /* ✅ 配置弹窗更宽一些 */
     .config-content {
       background: white;
       padding: 30px;
       border-radius: 15px;
-      max-width: 600px;
-      width: 90%;
+      max-width: 860px;     /* ✅ 拉宽 */
+      width: 94%;           /* ✅ 更宽的响应式 */
       max-height: 80vh;
       overflow-y: auto;
     }
@@ -400,7 +392,33 @@
       margin-bottom: 15px;
     }
 
-    .config-buttons { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+    /* ✅ 配置弹窗按钮：左/右分组对齐 + 同一尺寸 */
+    .config-buttons {
+      display: flex;
+      align-items: center;
+      justify-content: space-between; /* 左右分开 */
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .config-buttons-left,
+    .config-buttons-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .config-buttons .btn {
+      min-width: 160px;     /* ✅ 四个按钮统一大小 */
+      padding: 12px 18px;   /* ✅ 统一视觉 */
+      font-size: 1.0em;
+    }
+    .config-buttons select {
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 2px solid #ddd;
+      min-width: 240px;
+      font-weight: 600;
+    }
 
     /* 玩家设置模态框 */
     .player-setup { margin-bottom: 20px; }
@@ -434,7 +452,7 @@
     .player-names-input { display: none; }
     .player-names-input.active { display: block; }
 
-    /* === 玩家屏锁定：完全不可操作 === */
+    /* === 玩家屏锁定 === */
     body.player-locked .control-panel,
     body.player-locked .config-modal { display: none !important; }
 
@@ -446,28 +464,28 @@
       .control-panel { flex: 1; }
       .scoreboard-header { flex-direction: column; }
       .scoreboard-actions { width: 100%; justify-content: center; }
-      .top-reset-btn { position: static; width: 100%; margin-top: 10px; }
+      .top-reset-btn, .top-left-btn { position: static; width: 100%; margin-top: 10px; }
       .title-bar { display: flex; flex-direction: column; gap: 8px; }
-    }
-
-    /* ✅ 玩家屏：去掉绿/红边框与发光，但保留 outline 网格线 */
-    body.player-locked .grid-cell.revealed,
-    body.player-locked .grid-cell.random-revealed {
-      border: none !important;        /* ✅ 不要绿/红 border */
-      box-shadow: none !important;    /* ✅ 不要发光 */
-      background: transparent !important;
+      .config-buttons { justify-content: flex-start; }
+      .config-buttons-left, .config-buttons-right { width: 100%; justify-content: flex-start; }
+      .config-buttons .btn { min-width: 0; width: 100%; }
+      .config-buttons select { width: 100%; min-width: 0; }
     }
   </style>
 </head>
 
 <body>
   <div class="container">
-    <!-- ✅ 标题栏：右上角放“一键重置” -->
     <div class="title-bar">
+      <button class="top-left-btn" id="shareLibraryBtn" onclick="openShareLibrary()">
+        分享您的题库
+      </button>
+
       <h1>
         🎮 动漫高手 3.0
         <span class="role-badge" id="roleBadge">role</span>
       </h1>
+
       <button class="top-reset-btn" id="resetAllBtnTop" onclick="resetAll()">
         ♻️ 一键重置
       </button>
@@ -500,67 +518,41 @@
       <div class="image-container">
         <div class="image-wrapper" id="imageWrapper">
           <img id="gameImage" src="" alt="游戏图片" style="display:none;">
+          <div class="curtain" id="curtain"></div>
           <div class="grid-overlay" id="gridOverlay"></div>
         </div>
-        <div class="loading" id="loadingText">请先设置玩家和图片</div>
+
+        <div class="loading" id="loadingText" style="display:block;">
+          <div class="loading-inner">
+            <div id="loadingMain">请先设置玩家和图片</div>
+            <div class="loading-hint" id="loadingHint" style="display:none;"></div>
+          </div>
+        </div>
       </div>
 
-      <!-- 控制面板（玩家屏会整体隐藏） -->
       <div class="control-panel" id="controlPanel">
-        <!-- ✅ 新增：帮助按钮，放在打开玩家显示屏上方 -->
-        <button class="btn btn-info" id="helpBtn" onclick="openHelp()">
-          ❓ 帮助
-        </button>
+        <button class="btn btn-info" id="helpBtn" onclick="openHelp()">❓ 帮助</button>
 
-        <button class="btn btn-info" id="openPlayerBtn" onclick="openPlayerScreen()">
-          🖥️ 打开玩家显示屏
-        </button>
+        <button class="btn btn-info" id="openPlayerBtn" onclick="openPlayerScreen()">🖥️ 打开玩家显示屏</button>
 
-        <!-- ✅ 已移除：原来的 resetAllBtn（重置按钮已放到标题右上角） -->
+        <button class="btn btn-info" id="playerSetupBtn" onclick="openPlayerSetup()">👥 设置玩家</button>
 
-        <button class="btn btn-info" id="playerSetupBtn" onclick="openPlayerSetup()">
-          👥 设置玩家
-        </button>
+        <button class="btn btn-info" id="configBtn" onclick="openConfig()">⚙️ 配置图片链接</button>
 
-        <button class="btn btn-info" id="configBtn" onclick="openConfig()">
-          ⚙️ 配置图片链接
-        </button>
+        <div class="selection-count" id="selectionCount">已选择: 0 个方块</div>
 
-        <!-- ✅ 修改：默认关闭 + 加入 +/- 调整数量 -->
-        <label class="toggle-row" title="开启后：每轮确认选择会随机额外展示指定数量的方块（即使你本轮没选任何方块，也可以确认并展示随机方块）">
-          <input type="checkbox" id="randomExtraToggle" onchange="toggleRandomExtra()" />
-          随机额外展示
-          <button type="button" class="step-btn" onclick="adjustRandomExtra(-1, event)">−</button>
-          <span class="step-count" id="randomExtraCountText">1</span>
-          <button type="button" class="step-btn" onclick="adjustRandomExtra(1, event)">+</button>
-          个方块
-        </label>
+        <button class="btn btn-success" id="showFullBtn" onclick="showFullImage()" disabled>🧩 选择展示区块</button>
 
-        <div class="selection-count" id="selectionCount">
-          已手动选择: 0 个方块
-        </div>
+        <button class="btn btn-primary" id="confirmSelectionBtn" onclick="confirmSelection()" disabled>✅ 确认选择并展示</button>
 
-        <button class="btn btn-success" id="showFullBtn" onclick="showFullImage()" disabled>
-          🧩 选择展示区块
-        </button>
+        <button class="btn btn-warning" id="revealAnswerBtn" onclick="revealAnswerToAll()" disabled>🖼️ 向玩家展示完整图片（公布答案）</button>
 
-        <button class="btn btn-primary" id="confirmSelectionBtn" onclick="confirmSelection()" disabled>
-          ✅ 确认选择并展示
-        </button>
-
-        <!-- ✅ 位置调整：公布答案放在“下一张图片”之前 -->
-        <button class="btn btn-warning" id="revealAnswerBtn" onclick="revealAnswerToAll()" disabled>
-          🖼️ 向玩家展示完整图片（公布答案）
-        </button>
-
-        <button class="btn btn-danger" id="nextImageBtn" onclick="nextImage()" disabled>
-          ⏭️ 下一张图片
-        </button>
+        <button class="btn btn-danger" id="nextImageBtn" onclick="nextImage()" disabled>⏭️ 下一张图片</button>
       </div>
     </div>
   </div>
 
-  <!-- ✅ 新增：帮助弹窗 -->
+  <!-- ✅ 帮助弹窗 -->
   <div class="config-modal" id="helpModal">
     <div class="config-content">
       <h2>❓ 帮助</h2>
@@ -577,7 +569,10 @@
         </p>
       </div>
       <div class="config-buttons">
-        <button class="btn btn-warning" onclick="closeHelp()">关闭</button>
+        <div class="config-buttons-left"></div>
+        <div class="config-buttons-right">
+          <button class="btn btn-warning" onclick="closeHelp()">关闭</button>
+        </div>
       </div>
     </div>
   </div>
@@ -604,16 +599,48 @@
         </div>
       </div>
       <div class="config-buttons">
-        <button class="btn btn-primary" onclick="savePlayerSetup()">💾 保存玩家设置</button>
-        <button class="btn btn-warning" onclick="closePlayerSetup()">❌ 取消</button>
+        <div class="config-buttons-left"></div>
+        <div class="config-buttons-right">
+          <button class="btn btn-primary" onclick="savePlayerSetup()">💾 保存玩家设置</button>
+          <button class="btn btn-warning" onclick="closePlayerSetup()">❌ 取消</button>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- 图片配置模态框 -->
   <div class="config-modal" id="configModal">
-    <div class="config-content">
+    <div class="config-content" style="position: relative;">
+      
+      <!-- ✅ 右上角：分享您的题库 -->
+      <button
+        class="btn"
+        style="
+          position: absolute;
+          top: 16px;
+          right: 20px;
+
+          /* ✅ 颜色：与顶部“分享您的题库”一致 */
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          color: white;
+
+          /* ✅ 尺寸：与下面四个按钮一致 */
+          min-width: 160px;
+          padding: 12px 18px;
+          font-size: 1.0em;
+          font-weight: bold;
+
+          border-radius: 10px;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        "
+        onclick="openShareLibrary()"
+        type="button"
+      >
+        分享您的题库
+      </button>
+
+
       <h2>⚙️ 配置图片链接</h2>
+
 
       <a href="https://github.com/Davy-Chendy/anime-master-game"
         target="_blank"
@@ -630,21 +657,31 @@
       <textarea id="imageUrlsInput"
         placeholder="请输入图片链接，每行一个&#10;https://example.com/pic1.jpg&#10;https://example.com/pic2.jpg&#10;..."></textarea>
 
+      <!-- ✅ 左右分组：左边（共享/预设/下拉），右边（保存/取消） -->
       <div class="config-buttons">
-        <button class="btn btn-info" onclick="loadAuthorExamples()">📚 使用作者题库</button>
-        <button class="btn btn-primary" onclick="saveConfig()">💾 保存配置</button>
-        <button class="btn btn-warning" onclick="closeConfig()">❌ 取消</button>
+        <div class="config-buttons-left">
+          <button class="btn btn-info" type="button" onclick="openSharedLibrary()">
+            浏览共享题库
+          </button>
+
+          <button class="btn btn-info" type="button" onclick="togglePresetDropdown()">
+            作者预设题库
+          </button>
+
+          <select id="presetSelect" style="display:none;" onchange="applySelectedPreset()">
+            <option value="" selected disabled>请选择一个预设题库...</option>
+          </select>
+        </div>
+
+        <div class="config-buttons-right">
+          <button class="btn btn-primary" onclick="saveConfig()">💾 保存配置</button>
+          <button class="btn btn-warning" onclick="closeConfig()">❌ 取消</button>
+        </div>
       </div>
     </div>
   </div>
 
-
   <script>
-    /**
-     * 双屏主持人模式（同机双窗口）
-     * - role=host：可操作（默认）
-     * - role=player：完全不可操作，只接收 host 广播的状态并渲染
-     */
     const params = new URLSearchParams(location.search);
     const ROLE = (params.get('role') || 'host').toLowerCase();
     const IS_HOST = ROLE !== 'player';
@@ -652,35 +689,229 @@
     const CHANNEL_NAME = 'anime-game-sync-v4';
     const channel = new BroadcastChannel(CHANNEL_NAME);
 
-    // 游戏状态
     let currentImageIndex = 0;
     let currentRound = 0;
     let selectedCells = [];
     let revealedCells = new Set();
-    let randomRevealedCells = new Set();
     let isFullImageMode = false;
     let imageUrls = [];
     let players = [];
-    let randomExtraEnabled = false; // ✅ 修改：默认关闭
-    let randomExtraCount = 1;       // ✅ 新增：随机额外展示数量（最小 1）
 
-    // ✅ 新增：用于避免 resetAll 时出现“成功加载 0 张图片！”等过期回调
     let imageLoadToken = 0;
+    let loadingWarnTimer = null;
 
-    // ✅ 新增：答案公布态（一次性，不提供关闭；下一张图会自动退出）
     let answerRevealed = false;
 
     const ROWS = 5, COLS = 9;
     const TOTAL_CELLS = ROWS * COLS;
 
-    // ✅ 帮助弹窗
-    function openHelp() {
+    // ====== 作者预设题库（JSON）======
+    let presetBank = null;
+    let presetKeys = [];
+    let presetLoadedOnce = false;
+
+    async function loadPresetBankIfNeeded() {
+      if (presetLoadedOnce && presetBank) return;
+
+      const select = document.getElementById('presetSelect');
+      const textarea = document.getElementById('imageUrlsInput');
+
+      try {
+        const res = await fetch('./examples.json', { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+
+        const data = await res.json();
+        if (!data || typeof data !== 'object') throw new Error('examples.json 格式不是对象');
+
+        presetBank = data;
+        presetKeys = Object.keys(presetBank).filter(k => Array.isArray(presetBank[k]));
+        presetKeys.sort();
+
+        if (presetKeys.length === 0) throw new Error('examples.json 中没有可用的题库数组（value 必须是数组）');
+
+        if (select) {
+          select.innerHTML = `<option value="" selected disabled>请选择一个预设题库...</option>`;
+          presetKeys.forEach(k => {
+            const opt = document.createElement('option');
+            opt.value = k;
+            opt.textContent = `${k}（${presetBank[k].length} 张）`;
+            select.appendChild(opt);
+          });
+        }
+
+        presetLoadedOnce = true;
+      } catch (e) {
+        console.error(e);
+        presetBank = null;
+        presetKeys = [];
+        presetLoadedOnce = false;
+        if (textarea) textarea.value = '';
+        alert(
+          '读取 examples.json 失败。\n' +
+          '请确认 examples.json 与 index.html 在同一目录，并通过 http(s) 方式运行（例如 GitHub Pages 或 python -m http.server）。\n\n' +
+          '错误信息：' + (e && e.message ? e.message : String(e))
+        );
+      }
+    }
+
+    async function togglePresetDropdown() {
       if (!IS_HOST) return;
-      document.getElementById('helpModal').classList.add('active');
+      const select = document.getElementById('presetSelect');
+      if (!select) return;
+
+      await loadPresetBankIfNeeded();
+      if (!presetBank) return;
+
+      const visible = (select.style.display !== 'none');
+      select.style.display = visible ? 'none' : 'inline-block';
+      if (!visible) setTimeout(() => { try { select.focus(); } catch (e) {} }, 0);
     }
-    function closeHelp() {
-      document.getElementById('helpModal').classList.remove('active');
+
+    function applySelectedPreset() {
+      if (!IS_HOST) return;
+      const select = document.getElementById('presetSelect');
+      const textarea = document.getElementById('imageUrlsInput');
+      if (!select || !textarea) return;
+
+      const key = select.value;
+      if (!key || !presetBank || !Array.isArray(presetBank[key])) return;
+
+      const urls = presetBank[key].map(s => String(s).trim()).filter(s => s.length > 0);
+      if (urls.length === 0) { alert('该预设题库为空。'); return; }
+
+      textarea.value = urls.join('\n');
+      alert(`已选择预设题库：${key}（${urls.length} 张）`);
     }
+
+    // ========= 预加载（队列 + 并发控制）=========
+    const preloadCache = new Map();
+    let preloadQueue = [];
+    let preloadInFlight = 0;
+
+    const PRELOAD_LOOKAHEAD = 20;
+    const PRELOAD_CONCURRENCY = 4;
+
+    function enqueuePreload(urls) {
+      for (const url of urls) {
+        if (!url) continue;
+        const st = preloadCache.get(url)?.status;
+        if (st === 'loaded' || st === 'loading' || st === 'queued') continue;
+        preloadCache.set(url, { status: 'queued' });
+        preloadQueue.push(url);
+      }
+      pumpPreloadQueue();
+    }
+
+    function pumpPreloadQueue() {
+      while (preloadInFlight < PRELOAD_CONCURRENCY && preloadQueue.length > 0) {
+        const url = preloadQueue.shift();
+        const entry = preloadCache.get(url);
+        if (!entry || entry.status !== 'queued') continue;
+
+        entry.status = 'loading';
+        preloadInFlight++;
+
+        const img = new Image();
+        img.onload = () => {
+          const e = preloadCache.get(url);
+          if (e) e.status = 'loaded';
+          preloadInFlight--;
+          pumpPreloadQueue();
+        };
+        img.onerror = () => {
+          const e = preloadCache.get(url);
+          if (e) e.status = 'error';
+          preloadInFlight--;
+          pumpPreloadQueue();
+        };
+        img.src = url;
+      }
+    }
+
+    function schedulePreloadAround(index) {
+      if (!Array.isArray(imageUrls) || imageUrls.length <= 0) return;
+      const urls = [];
+      const maxK = Math.min(PRELOAD_LOOKAHEAD, imageUrls.length - 1);
+      for (let k = 1; k <= maxK; k++) {
+        const i = (index + k) % imageUrls.length;
+        urls.push(imageUrls[i]);
+      }
+      enqueuePreload(urls);
+    }
+
+    // ========= 外链打开 =========
+    function openUrl(url) {
+      try { window.open(url, '_blank', 'noopener,noreferrer'); }
+      catch (e) { location.href = url; }
+    }
+
+    function openShareLibrary() {
+      if (!IS_HOST) return;
+      openUrl('https://docs.qq.com/smartsheet/form/YEXpcygKpwUW%2Ft0jKWP%2FvR7Tzr?tab=t0jKWP');
+    }
+
+    function openSharedLibrary() {
+      if (!IS_HOST) return;
+      openUrl('https://docs.qq.com/smartsheet/DWUVYcGN5Z0twd1VX?tab=t0jKWP');
+    }
+
+    // ========= Loading 控制 =========
+    function setLoadingUI(visible, mainText = '', hintText = '') {
+      const loading = document.getElementById('loadingText');
+      const main = document.getElementById('loadingMain');
+      const hint = document.getElementById('loadingHint');
+      if (!loading || !main || !hint) return;
+
+      if (!visible) {
+        loading.style.display = 'none';
+        hint.style.display = 'none';
+        hint.textContent = '';
+        main.textContent = '';
+        return;
+      }
+
+      loading.style.display = 'flex';
+      main.textContent = mainText || '';
+
+      if (hintText) {
+        hint.style.display = 'block';
+        hint.textContent = hintText;
+      } else {
+        hint.style.display = 'none';
+        hint.textContent = '';
+      }
+    }
+
+    function startLoadingWarnTimer(token) {
+      if (loadingWarnTimer) clearTimeout(loadingWarnTimer);
+      loadingWarnTimer = setTimeout(() => {
+        if (token !== imageLoadToken) return;
+        const msg = IS_HOST
+          ? '加载超过 10 秒：可能图片过大或链接有误。可直接点击「下一张图片」跳过本题。'
+          : '加载超过 10 秒：可能图片过大或链接有误。';
+        const hint = document.getElementById('loadingHint');
+        if (hint) {
+          hint.style.display = 'block';
+          hint.textContent = msg;
+        }
+      }, 10000);
+    }
+
+    // ========= 幕布 + 无过渡重置 =========
+    function showCurtain() { const c = document.getElementById('curtain'); if (c) c.style.display = 'block'; }
+    function hideCurtain() { const c = document.getElementById('curtain'); if (c) c.style.display = 'none'; }
+
+    function resetCellsNoTransition() {
+      const overlay = document.getElementById('gridOverlay');
+      if (!overlay) return;
+      overlay.classList.add('no-transition');
+      coverAllCells();
+      requestAnimationFrame(() => overlay.classList.remove('no-transition'));
+    }
+
+    // ✅ 帮助弹窗
+    function openHelp() { if (!IS_HOST) return; document.getElementById('helpModal').classList.add('active'); }
+    function closeHelp() { document.getElementById('helpModal').classList.remove('active'); }
 
     // ========== 同步 ==========
     function getGameState() {
@@ -692,9 +923,6 @@
         imageUrls,
         players,
         revealedCells: Array.from(revealedCells),
-        randomRevealedCells: Array.from(randomRevealedCells),
-        randomExtraEnabled,
-        randomExtraCount,
         answerRevealed
       };
     }
@@ -705,42 +933,24 @@
     }
 
     function applyGameState(state) {
+      const prevScrollY = (!IS_HOST) ? window.scrollY : 0;
+
       if (Array.isArray(state.imageUrls)) imageUrls = state.imageUrls;
       if (Array.isArray(state.players)) players = state.players;
-
-      if (typeof state.randomExtraEnabled === 'boolean') {
-        randomExtraEnabled = state.randomExtraEnabled;
-        const toggle = document.getElementById('randomExtraToggle');
-        if (toggle) toggle.checked = randomExtraEnabled;
-      }
-
-      if (typeof state.randomExtraCount === 'number') {
-        const n = Math.max(1, Math.floor(state.randomExtraCount));
-        randomExtraCount = n;
-        const t = document.getElementById('randomExtraCountText');
-        if (t) t.textContent = String(randomExtraCount);
-      }
-
-      if (typeof state.answerRevealed === 'boolean') {
-        answerRevealed = state.answerRevealed;
-      }
+      if (typeof state.answerRevealed === 'boolean') answerRevealed = state.answerRevealed;
 
       const nextImageIndex = Number(state.currentImageIndex || 0);
       const nextRound = Number(state.currentRound || 0);
       const nextRevealed = new Set(Array.isArray(state.revealedCells) ? state.revealedCells : []);
-      const nextRandom = new Set(Array.isArray(state.randomRevealedCells) ? state.randomRevealedCells : []);
 
       currentRound = nextRound;
       revealedCells = nextRevealed;
-      randomRevealedCells = nextRandom;
 
       renderScoreboard();
 
       const img = document.getElementById('gameImage');
       const wrapper = document.getElementById('imageWrapper');
-      const loading = document.getElementById('loadingText');
 
-      // 确保玩家端图片能显示：判断是否需要 load
       const targetUrl = (imageUrls && imageUrls.length > 0) ? imageUrls[nextImageIndex] : '';
       const alreadyLoadedThis =
         !!img.src && !!targetUrl && (img.src === targetUrl || img.src.includes(targetUrl));
@@ -748,10 +958,15 @@
 
       currentImageIndex = nextImageIndex;
 
+      updateStatus();
+
       if (imageUrls.length > 0) {
+        schedulePreloadAround(currentImageIndex);
+
         if (needLoad) {
           ensureGrid();
-          coverAllCells(); // 防闪
+          showCurtain();
+          resetCellsNoTransition();
           loadImage(currentImageIndex, () => {
             ensureGrid();
             renderGridFromState();
@@ -765,30 +980,24 @@
           updateButtonsByState();
         }
       } else {
-        // ✅ 关键修复：当 host resetAll 后，玩家屏也要把 UI 恢复到初始状态
         selectedCells = [];
         isFullImageMode = false;
 
-        // 盖黑/清状态（避免玩家屏还留着上一张的视觉）
         ensureGrid(true);
-        coverAllCells();
+        showCurtain();
+        resetCellsNoTransition();
 
-        // 复位图片区域到“请先设置玩家和图片”
-        if (img) {
-          img.src = '';
-          img.style.display = 'none';
-        }
-        if (wrapper) wrapper.style.display = 'none';
-        if (loading) {
-          loading.style.display = 'block';
-          loading.textContent = '请先设置玩家和图片';
-        }
+        if (img) { img.src = ''; img.style.display = 'none'; }
+        if (wrapper) { wrapper.style.visibility = 'visible'; wrapper.style.minHeight = ''; wrapper.style.display = 'none'; }
 
+        hideCurtain();
+        setLoadingUI(true, '请先设置玩家和图片', '');
         updateStatus();
         updateButtonsByState();
       }
-    }
 
+      if (!IS_HOST) requestAnimationFrame(() => window.scrollTo(0, prevScrollY));
+    }
 
     channel.onmessage = (ev) => {
       const msg = ev.data;
@@ -813,21 +1022,6 @@
       if (!IS_HOST) {
         document.body.classList.add('player-locked');
         isFullImageMode = false;
-      } else {
-        const savedToggle = localStorage.getItem('animeGameRandomExtraEnabled');
-        if (savedToggle !== null) randomExtraEnabled = (savedToggle === 'true');
-
-        const savedCount = localStorage.getItem('animeGameRandomExtraCount');
-        if (savedCount !== null) {
-          const n = parseInt(savedCount, 10);
-          if (!Number.isNaN(n)) randomExtraCount = Math.max(1, Math.floor(n));
-        }
-
-        const toggle = document.getElementById('randomExtraToggle');
-        if (toggle) toggle.checked = randomExtraEnabled;
-
-        const t = document.getElementById('randomExtraCountText');
-        if (t) t.textContent = String(randomExtraCount);
       }
 
       const savedPlayers = localStorage.getItem('animeGamePlayers');
@@ -841,11 +1035,11 @@
       updateSelectionCount();
       updateStatus();
 
-      // 计分板清空按钮仅 Host 显示
       document.getElementById('scoreboardActions').style.display = IS_HOST ? 'flex' : 'none';
 
       if (IS_HOST) {
         if (imageUrls.length > 0 && players.length > 0) {
+          showCurtain();
           loadImage(0, () => {
             document.getElementById('showFullBtn').disabled = false;
             document.getElementById('nextImageBtn').disabled = false;
@@ -853,8 +1047,10 @@
             updateButtonsByState();
             broadcastState('init');
           });
+          schedulePreloadAround(0);
         } else {
           updateButtonsByState();
+          setLoadingUI(true, '请先设置玩家和图片', '');
         }
       } else {
         channel.postMessage({ type: 'request_state', ts: Date.now() });
@@ -876,28 +1072,24 @@
       const confirmBtn = document.getElementById('confirmSelectionBtn');
       const nextBtn = document.getElementById('nextImageBtn');
       const revealBtn = document.getElementById('revealAnswerBtn');
-
       if (!showFullBtn || !confirmBtn || !nextBtn || !revealBtn) return;
 
-      // 公布答案后：锁住“选块/确认”，只剩“下一张图片”
       if (answerRevealed) {
         showFullBtn.disabled = true;
         confirmBtn.disabled = true;
-        revealBtn.disabled = true; // 一次性动作，不再允许重复点
+        revealBtn.disabled = true;
         nextBtn.disabled = !hasReady;
         return;
       }
 
-      // 未公布：根据常规可用性
       showFullBtn.disabled = !hasReady || isFullImageMode;
       nextBtn.disabled = !hasReady;
       revealBtn.disabled = !hasReady;
 
-      // confirmBtn 由 updateSelectionCount 控制
       updateSelectionCount();
     }
 
-    // ========== Host：一键打开玩家屏 ==========
+    // ========== Host：打开玩家屏 ==========
     function openPlayerScreen() {
       if (!IS_HOST) return;
       const url = new URL(window.location.href);
@@ -910,15 +1102,13 @@
       setTimeout(() => { try { w.focus(); } catch (e) { } }, 200);
     }
 
-    // ========== 一键重置 ==========
+    // ========== 重置 ==========
     function resetAll() {
       if (!IS_HOST) return;
-      if (!confirm('确定要一键重置吗？这会清空玩家、分数、图片配置、开关状态，并回到初始界面。')) return;
+      if (!confirm('确定要一键重置吗？这会清空玩家、分数、图片配置，并回到初始界面。')) return;
 
       localStorage.removeItem('animeGamePlayers');
       localStorage.removeItem('animeGameImageUrls');
-      localStorage.removeItem('animeGameRandomExtraEnabled');
-      localStorage.removeItem('animeGameRandomExtraCount'); // ✅ 新增
 
       players = [];
       imageUrls = [];
@@ -926,39 +1116,35 @@
       currentRound = 0;
       selectedCells = [];
       revealedCells.clear();
-      randomRevealedCells.clear();
       isFullImageMode = false;
-      randomExtraEnabled = false; // ✅ 修改：重置后默认关闭
-      randomExtraCount = 1;       // ✅ 新增：重置回 1
       answerRevealed = false;
 
-      // ✅ 关键：打断任何“旧的图片加载回调”
       imageLoadToken++;
-
-      const toggle = document.getElementById('randomExtraToggle');
-      if (toggle) toggle.checked = randomExtraEnabled;
-      const t = document.getElementById('randomExtraCountText');
-      if (t) t.textContent = String(randomExtraCount);
+      if (loadingWarnTimer) clearTimeout(loadingWarnTimer);
 
       renderScoreboard();
       ensureGrid(true);
-      coverAllCells();
+      showCurtain();
+      resetCellsNoTransition();
+      hideCurtain();
+
       updateSelectionCount();
       updateStatus();
       updateButtonsByState();
 
       const img = document.getElementById('gameImage');
       const wrapper = document.getElementById('imageWrapper');
-      const loading = document.getElementById('loadingText');
       img.src = '';
       img.style.display = 'none';
       wrapper.style.display = 'none';
-      loading.style.display = 'block';
-      loading.textContent = '请先设置玩家和图片';
+      wrapper.style.visibility = 'visible';
+      wrapper.style.minHeight = '';
 
       closeConfig();
       closePlayerSetup();
       closeHelp();
+
+      setLoadingUI(true, '请先设置玩家和图片', '');
 
       broadcastState('reset_all');
       alert('已重置到初始状态。');
@@ -967,10 +1153,7 @@
     // ========== 清空分数 ==========
     function clearAllScores() {
       if (!IS_HOST) return;
-      if (players.length === 0) {
-        alert('还没有玩家。');
-        return;
-      }
+      if (players.length === 0) { alert('还没有玩家。'); return; }
       if (!confirm('确定要清空所有玩家分数吗？')) return;
 
       players = players.map(p => ({ ...p, score: 0 }));
@@ -979,37 +1162,11 @@
       broadcastState('clear_scores');
     }
 
-    // ========== 随机额外展示开关 + 数量 ==========
-    function toggleRandomExtra() {
-      if (!IS_HOST) return;
-      const toggle = document.getElementById('randomExtraToggle');
-      randomExtraEnabled = !!toggle.checked;
-      localStorage.setItem('animeGameRandomExtraEnabled', String(randomExtraEnabled));
-      updateSelectionCount(); // ✅ 让“确认按钮”即时按新逻辑更新
-      broadcastState('toggle_random_extra');
-    }
-
-    function adjustRandomExtra(delta, ev) {
-      if (!IS_HOST) return;
-      if (ev) { ev.preventDefault(); ev.stopPropagation(); }
-
-      const next = Math.max(1, Math.min(20, randomExtraCount + delta)); // ✅ 上限给个安全值
-      randomExtraCount = next;
-
-      const t = document.getElementById('randomExtraCountText');
-      if (t) t.textContent = String(randomExtraCount);
-
-      localStorage.setItem('animeGameRandomExtraCount', String(randomExtraCount));
-      updateSelectionCount(); // ✅ 让“确认按钮”即时按新逻辑更新
-      broadcastState('adjust_random_extra_count');
-    }
-
-    // ========== 玩家设置相关 ==========
+    // ========== 玩家设置 ==========
     function openPlayerSetup() {
       if (!IS_HOST) return;
       document.getElementById('playerSetupModal').classList.add('active');
     }
-
     function closePlayerSetup() {
       document.getElementById('playerSetupModal').classList.remove('active');
     }
@@ -1035,10 +1192,7 @@
     function savePlayerSetup() {
       if (!IS_HOST) return;
       const inputs = document.querySelectorAll('#nameInputs .player-input');
-      if (inputs.length === 0) {
-        alert('请先选择玩家人数！');
-        return;
-      }
+      if (inputs.length === 0) { alert('请先选择玩家人数！'); return; }
 
       const newPlayers = [];
       let hasEmpty = false;
@@ -1049,10 +1203,7 @@
         newPlayers.push({ name, score: players[index] ? players[index].score : 0 });
       });
 
-      if (hasEmpty) {
-        alert('请填写所有玩家的名字！');
-        return;
-      }
+      if (hasEmpty) { alert('请填写所有玩家的名字！'); return; }
 
       players = newPlayers;
       localStorage.setItem('animeGamePlayers', JSON.stringify(players));
@@ -1068,6 +1219,11 @@
       updateButtonsByState();
       broadcastState('save_players');
       alert(`成功设置 ${players.length} 位玩家！`);
+
+      if (imageUrls.length > 0 && players.length > 0) {
+        setLoadingUI(false);
+        schedulePreloadAround(currentImageIndex);
+      }
     }
 
     function renderScoreboard() {
@@ -1107,49 +1263,18 @@
       broadcastState('score_change');
     }
 
-    // ========== 图片配置相关 ==========
+    // ========== 配置 ==========
     function openConfig() {
       if (!IS_HOST) return;
       document.getElementById('configModal').classList.add('active');
       document.getElementById('imageUrlsInput').value = imageUrls.join('\n');
+
+      const select = document.getElementById('presetSelect');
+      if (select) select.style.display = 'none';
     }
 
     function closeConfig() {
       document.getElementById('configModal').classList.remove('active');
-    }
-
-    async function loadAuthorExamples() {
-      if (!IS_HOST) return;
-
-      const textarea = document.getElementById('imageUrlsInput');
-      textarea.value = '读取 examples.txt 中...';
-
-      try {
-        const res = await fetch('./examples.txt', { cache: 'no-store' });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const text = await res.text();
-
-        const urls = text
-          .split(/\r?\n/)
-          .map(s => s.trim())
-          .filter(s => s.length > 0 && !s.startsWith('#'));
-
-        if (urls.length === 0) {
-          textarea.value = '';
-          alert('examples.txt 为空或没有有效链接。');
-          return;
-        }
-
-        textarea.value = urls.join('\n');
-        alert(`已加载作者题库：${urls.length} 条链接。`);
-      } catch (e) {
-        console.error(e);
-        textarea.value = '';
-        alert(
-          '读取 examples.txt 失败。\n' +
-          '请确认 examples.txt 与 index.html 在同一目录，并通过 http(s) 方式运行（例如 GitHub Pages 或 python -m http.server）。'
-        );
-      }
     }
 
     function saveConfig() {
@@ -1157,22 +1282,20 @@
       const input = document.getElementById('imageUrlsInput').value;
       const urls = input.split('\n').map(u => u.trim()).filter(u => u.length > 0);
 
-      if (urls.length === 0) {
-        alert('请至少输入一个图片链接！');
-        return;
-      }
+      if (urls.length === 0) { alert('请至少输入一个图片链接！'); return; }
 
       imageUrls = urls;
       localStorage.setItem('animeGameImageUrls', JSON.stringify(imageUrls));
 
-      // 配置更新：退出答案公布态，回到正常流程
       answerRevealed = false;
-
       resetProgressForNewImage(0);
 
-      const myToken = imageLoadToken + 1; // ✅ 仅用于理解（真正 token 在 loadImage 内部自增）
+      updateStatus();
+
+      showCurtain();
+      resetCellsNoTransition();
+
       loadImage(0, () => {
-        // ✅ 若期间被 resetAll() 打断，则不再执行后续弹窗/渲染逻辑
         if (imageUrls.length === 0) return;
 
         ensureGrid(true);
@@ -1192,6 +1315,8 @@
         broadcastState('save_config');
         closeConfig();
         alert(`成功加载 ${imageUrls.length} 张图片！`);
+
+        schedulePreloadAround(0);
       });
     }
 
@@ -1200,7 +1325,6 @@
       currentRound = 0;
       selectedCells = [];
       revealedCells.clear();
-      randomRevealedCells.clear();
       isFullImageMode = false;
     }
 
@@ -1210,37 +1334,60 @@
         return;
       }
 
-      // ✅ 每次加载都生成一个 token；resetAll() 会 imageLoadToken++ 打断旧回调
       const token = ++imageLoadToken;
+      if (loadingWarnTimer) clearTimeout(loadingWarnTimer);
 
       const img = document.getElementById('gameImage');
       const wrapper = document.getElementById('imageWrapper');
-      const loading = document.getElementById('loadingText');
 
-      loading.textContent = '加载中...';
-      loading.style.display = 'block';
-      wrapper.style.display = 'none';
+      setLoadingUI(true, '加载中...', '');
+      startLoadingWarnTimer(token);
 
-      // ✅ 防闪：先盖黑、隐藏图层
+      const prevH = wrapper.offsetHeight || img.offsetHeight || 0;
+      wrapper.style.display = 'inline-block';
+      wrapper.style.visibility = 'hidden';
+      if (prevH > 0) wrapper.style.minHeight = prevH + 'px';
+
+      showCurtain();
       ensureGrid();
-      coverAllCells();
+      resetCellsNoTransition();
+
       img.style.display = 'none';
-      wrapper.style.display = 'none';
 
       img.onload = function () {
-        if (token !== imageLoadToken) return; // ✅ 过期回调直接丢弃
-        loading.style.display = 'none';
+        if (token !== imageLoadToken) return;
+        if (loadingWarnTimer) clearTimeout(loadingWarnTimer);
+
         wrapper.style.display = 'inline-block';
+        wrapper.style.visibility = 'visible';
+        wrapper.style.minHeight = '';
+
         img.style.display = 'block';
         syncGridOverlay();
+
+        setLoadingUI(false);
+
         if (typeof onDone === 'function') onDone();
+
+        hideCurtain();
+
+        schedulePreloadAround(currentImageIndex);
       };
 
       img.onerror = function () {
-        if (token !== imageLoadToken) return; // ✅ 过期回调直接丢弃
-        loading.textContent = '图片加载失败，请检查链接';
-        loading.style.display = 'block';
-        wrapper.style.display = 'none';
+        if (token !== imageLoadToken) return;
+        if (loadingWarnTimer) clearTimeout(loadingWarnTimer);
+
+        const msg = IS_HOST
+          ? '图片加载失败：请检查链接，或直接点击「下一张图片」跳过本题。'
+          : '图片加载失败';
+
+        setLoadingUI(true, '图片加载失败，请检查链接', msg);
+
+        wrapper.style.visibility = 'visible';
+        wrapper.style.minHeight = '';
+        hideCurtain();
+
         if (typeof onDone === 'function') onDone();
       };
 
@@ -1255,9 +1402,7 @@
     }
 
     window.addEventListener('resize', function () {
-      if (document.getElementById('gameImage').style.display !== 'none') {
-        syncGridOverlay();
-      }
+      if (document.getElementById('gameImage').style.display !== 'none') syncGridOverlay();
     });
 
     function ensureGrid(forceRecreate = false) {
@@ -1281,19 +1426,15 @@
     function coverAllCells() {
       const cells = document.querySelectorAll('.grid-cell');
       cells.forEach(cell => {
-        cell.classList.remove(
-          'selectable', 'selected',
-          'revealed', 'revealed-hint',
-          'random-revealed', 'random-revealed-hint'
-        );
+        cell.classList.remove('selectable', 'selected', 'revealed', 'revealed-hint');
         cell.classList.add('covered');
       });
     }
 
-    // ========== 出题流程：任意数量 ==========
+    // ========== 出题流程 ==========
     function showFullImage() {
       if (!IS_HOST) return;
-      if (answerRevealed) return; // 公布答案后不允许再进入选块
+      if (answerRevealed) return;
 
       selectedCells = [];
       isFullImageMode = true;
@@ -1309,7 +1450,7 @@
       if (!IS_HOST) return;
       if (!isFullImageMode) return;
       if (answerRevealed) return;
-      if (revealedCells.has(index) || randomRevealedCells.has(index)) return;
+      if (revealedCells.has(index)) return;
 
       const cell = document.querySelectorAll('.grid-cell')[index];
       if (selectedCells.includes(index)) {
@@ -1329,14 +1470,7 @@
 
       const confirmBtn = document.getElementById('confirmSelectionBtn');
       if (confirmBtn) {
-        // ✅ 修改逻辑：
-        // 只要在“选块模式”，且（选了>0 或 开启随机额外展示），就允许确认
-        const canConfirm =
-          IS_HOST &&
-          isFullImageMode &&
-          !answerRevealed &&
-          (selectedCells.length > 0 || (randomExtraEnabled && randomExtraCount > 0));
-
+        const canConfirm = IS_HOST && isFullImageMode && !answerRevealed && (selectedCells.length > 0);
         confirmBtn.disabled = !canConfirm;
       }
     }
@@ -1345,28 +1479,9 @@
       if (!IS_HOST) return;
       if (!isFullImageMode) return;
       if (answerRevealed) return;
-
-      // ✅ 修改逻辑：
-      // 若没选方块，但开启了随机额外展示，也允许继续
-      if (selectedCells.length <= 0 && !(randomExtraEnabled && randomExtraCount > 0)) return;
+      if (selectedCells.length <= 0) return;
 
       selectedCells.forEach(index => revealedCells.add(index));
-
-      if (randomExtraEnabled) {
-        // ✅ 随机额外展示：支持多个
-        const picks = Math.max(1, Math.floor(randomExtraCount));
-        for (let k = 0; k < picks; k++) {
-          const available = [];
-          for (let i = 0; i < TOTAL_CELLS; i++) {
-            if (!revealedCells.has(i) && !randomRevealedCells.has(i)) available.push(i);
-          }
-          if (available.length <= 0) break;
-
-          const rand = available[Math.floor(Math.random() * available.length)];
-          randomRevealedCells.add(rand);
-          revealedCells.add(rand);
-        }
-      }
 
       currentRound++;
       selectedCells = [];
@@ -1382,7 +1497,6 @@
       broadcastState('confirm_selection');
     }
 
-    // ✅ 新增：一次性公布答案（Host/Player 同步全图）
     function revealAnswerToAll() {
       if (!IS_HOST) return;
       if (imageUrls.length === 0) return;
@@ -1391,7 +1505,6 @@
       isFullImageMode = false;
       selectedCells = [];
 
-      // 公布后直接全图
       renderGridFromState();
       updateButtonsByState();
       broadcastState('reveal_answer');
@@ -1401,22 +1514,31 @@
     function nextImage() {
       if (!IS_HOST) return;
 
-      // ✅ 若已公布答案，则直接进入下一张，不弹确认框
       if (!answerRevealed) {
-        if (!confirm('确定要进入下一张图片吗？当前进度将重置。')) return;
+        if (!confirm('确定要进入下一张图片吗？')) return;
       }
 
-      currentImageIndex++;
-      if (currentImageIndex >= imageUrls.length) currentImageIndex = 0;
+      const wasLast = (imageUrls.length > 0 && currentImageIndex === imageUrls.length - 1);
 
-      resetProgressForNewImage(currentImageIndex);
+      let next = currentImageIndex + 1;
+      if (next >= imageUrls.length) next = 0;
 
-      // ✅ 下一张图自动退出“公布答案态”
+      // ✅ 一轮结束提示（回到第一张前提示）
+      if (wasLast && imageUrls.length > 0) {
+        alert('✅ 已完成一轮题库！即将回到第 1 张继续。');
+      }
+
+      resetProgressForNewImage(next);
       answerRevealed = false;
 
-      // ✅ 双保险：切图前先全部盖黑
+      updateStatus();
+      broadcastState('next_image_start');
+
+      schedulePreloadAround(currentImageIndex);
+
       ensureGrid();
-      coverAllCells();
+      showCurtain();
+      resetCellsNoTransition();
 
       loadImage(currentImageIndex, () => {
         ensureGrid(true);
@@ -1428,7 +1550,7 @@
         updateStatus();
         updateSelectionCount();
         updateButtonsByState();
-        broadcastState('next_image');
+        broadcastState('next_image_done');
       });
     }
 
@@ -1439,40 +1561,27 @@
 
       const inHostSelectMode = (IS_HOST && isFullImageMode);
 
-      // ✅ 公布答案：Host/Player 都全图
       if (answerRevealed) {
         cells.forEach(cell => {
-          cell.classList.remove(
-            'selectable', 'selected',
-            'revealed', 'revealed-hint',
-            'random-revealed', 'random-revealed-hint',
-            'covered'
-          );
+          cell.classList.remove('selectable', 'selected', 'revealed', 'revealed-hint', 'covered');
         });
         return;
       }
 
       cells.forEach((cell, index) => {
-        cell.classList.remove(
-          'selectable', 'selected',
-          'revealed', 'revealed-hint',
-          'random-revealed', 'random-revealed-hint'
-        );
+        cell.classList.remove('selectable', 'selected', 'revealed', 'revealed-hint');
 
         if (inHostSelectMode) {
           cell.classList.remove('covered');
           cell.classList.add('selectable');
 
           if (selectedCells.includes(index)) cell.classList.add('selected');
-
           if (revealedCells.has(index)) cell.classList.add('revealed-hint');
-          if (randomRevealedCells.has(index)) cell.classList.add('random-revealed-hint');
         }
 
         if (revealedCells.has(index)) {
           cell.classList.remove('covered');
-          if (randomRevealedCells.has(index)) cell.classList.add('random-revealed');
-          else cell.classList.add('revealed');
+          cell.classList.add('revealed');
           return;
         }
 
@@ -1492,7 +1601,6 @@
       }
     }
 
-    // ========== 小工具 ==========
     function escapeHtml(str) {
       return String(str)
         .replaceAll('&', '&amp;')
