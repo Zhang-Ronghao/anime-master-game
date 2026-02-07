@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>动漫高手 3.0</title>
+  <title>动漫高手 · 一眼顶针</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -420,7 +420,7 @@
       font-size: 1.0em;
     }
 
-    /* ✅ 下拉：固定高度，避免抖动；并且可隐藏但不占用布局（这里用 display，放在上方不影响整体布局） */
+    /* ✅ 下拉：固定高度，避免抖动；并且可隐藏但不占用布局 */
     .preset-select {
       min-width: 260px;
       height: 46px;
@@ -495,7 +495,7 @@
       </button>
 
       <h1>
-        🎮 动漫高手 3.0
+        🎮 动漫高手 · 一眼顶针
         <span class="role-badge" id="roleBadge">role</span>
       </h1>
 
@@ -567,11 +567,11 @@
         <p id="instructionText">
           <b>【游戏前配置】</b><br>
           点击「打开玩家显示屏」→ 将玩家窗口投屏给玩家（如腾讯会议共享）→ 点击「设置玩家」→ 点击「配置图片链接」<br><br>
-                    
+
           <b>【游戏进行中】</b><br>
           可多轮执行：点击「选择展示区块」→ 选择任意数量区块 → 点击「确认选择并展示」（玩家抢答）<br>
           每张图片可重复多轮，直到有玩家答对 <br><br>
-          
+
           ⚠️ 注意：玩家屏不要最小化，主持人屏不要最大化完全遮挡玩家屏，否则画面可能无法实时刷新。<br><br>
 
           <a href="https://github.com/Davy-Chendy/anime-master-game" target="_blank" rel="noopener noreferrer">📖 详细说明（可构建自己的题库）</a>
@@ -614,7 +614,7 @@
   <!-- 图片配置模态框 -->
   <div class="config-modal" id="configModal">
     <div class="config-content" style="position: relative;">
-      <!-- ✅ 右上角：分享您的题库（颜色/尺寸与顶部一致 & 与按钮统一） -->
+      <!-- ✅ 右上角：分享您的题库 -->
       <button
         class="btn"
         style="
@@ -648,7 +648,7 @@
         示例：https://example.com/pic1.jpg
       </p>
 
-      <!-- ✅ 两按钮+隐藏下拉框，放到说明文字下方、输入框上方 -->
+      <!-- ✅ 两按钮+隐藏下拉框 -->
       <div class="library-row">
         <button class="btn btn-info" type="button" onclick="openSharedLibrary()">
           浏览共享题库
@@ -666,10 +666,27 @@
       <textarea id="imageUrlsInput"
         placeholder="请输入图片链接，每行一个&#10;https://example.com/pic1.jpg&#10;https://example.com/pic2.jpg&#10;..."></textarea>
 
-      <!-- ✅ 底部只保留：保存/取消（右对齐） -->
+      <!-- ✅ 底部：保存/取消 -->
       <div class="config-buttons">
         <button class="btn btn-primary" onclick="saveConfig()">💾 保存配置</button>
         <button class="btn btn-warning" onclick="closeConfig()">❌ 取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ 保存配置：正在加载弹窗（不阻塞） -->
+  <div class="config-modal" id="saveLoadingModal">
+    <div class="config-content" style="max-width:520px;">
+      <h2 id="saveLoadingTitle" style="margin-bottom:12px;">⏳ 正在加载图片...</h2>
+      <div class="info-box">
+        <p id="saveLoadingText" style="margin:0; line-height:1.6;">
+          正在预加载图片并加载第 1 张，请稍候…
+        </p>
+      </div>
+      <div class="config-buttons" style="margin-top:14px;">
+        <button class="btn btn-warning" type="button" onclick="closeSaveLoadingModal()" disabled id="saveLoadingCloseBtn">
+          请稍候...
+        </button>
       </div>
     </div>
   </div>
@@ -717,7 +734,7 @@
 
         presetBank = data;
 
-        // ✅ 关键修复：严格按 JSON 文件顺序（不 sort）
+        // ✅ 严格按 JSON 文件顺序（不 sort）
         presetKeys = Object.keys(presetBank).filter(k => Array.isArray(presetBank[k]));
 
         if (presetKeys.length === 0) throw new Error('examples.json 中没有可用题库数组（value 必须是数组）');
@@ -754,7 +771,6 @@
       await loadPresetBankIfNeeded();
       if (!presetBank) return;
 
-      // 显示下拉框
       select.classList.remove('preset-hidden');
 
       // ✅ 每次点“作者预设题库”，先把下拉框置回占位项
@@ -783,7 +799,6 @@
       select.value = "";
       select.classList.add('preset-hidden');
 
-      // ✅ 修改：提示需要点击保存配置
       alert(`已载入预设题库：${key}（${urls.length} 张）\n\n请点击「保存配置」使其生效。`);
     }
 
@@ -843,13 +858,12 @@
       enqueuePreload(urls);
     }
 
-    // ✅ 新增：预加载前 N 张（用于“保存配置”时先热身前 4 张）
+    // ✅ 预加载前 N 张（用于“保存配置”时先热身前 4 张）
     function preloadFirstN(urls, n = 4, timeoutMs = 12000) {
       const list = (Array.isArray(urls) ? urls : []).slice(0, Math.max(0, n)).filter(Boolean);
       if (list.length === 0) return Promise.resolve({ ok: 0, fail: 0 });
 
       const preloadOne = (url) => new Promise((resolve) => {
-        // 已经 loaded 直接算成功
         const st = preloadCache.get(url)?.status;
         if (st === 'loaded') return resolve({ url, ok: true });
 
@@ -866,7 +880,6 @@
           if (done) return;
           done = true;
           clearTimeout(timer);
-          // 写入 cache 状态，避免重复
           const e = preloadCache.get(url) || {};
           preloadCache.set(url, { ...e, status: 'loaded' });
           resolve({ url, ok: true });
@@ -947,6 +960,21 @@
           hint.textContent = msg;
         }
       }, 10000);
+    }
+
+    // ========= 保存配置：Loading 弹窗（不阻塞）=========
+    function openSaveLoadingModal(mainText = '正在预加载图片并加载第 1 张，请稍候…') {
+      const modal = document.getElementById('saveLoadingModal');
+      const text = document.getElementById('saveLoadingText');
+      const btn = document.getElementById('saveLoadingCloseBtn');
+      if (text) text.textContent = mainText;
+      if (btn) btn.disabled = true;
+      if (modal) modal.classList.add('active');
+    }
+
+    function closeSaveLoadingModal() {
+      const modal = document.getElementById('saveLoadingModal');
+      if (modal) modal.classList.remove('active');
     }
 
     // ========= 幕布 + 无过渡重置 =========
@@ -1194,6 +1222,7 @@
       closeConfig();
       closePlayerSetup();
       closeHelp();
+      closeSaveLoadingModal();
 
       setLoadingUI(true, '请先设置玩家和图片', '');
 
@@ -1328,7 +1357,7 @@
       document.getElementById('configModal').classList.remove('active');
     }
 
-    // ✅ 修改：保存配置时先提示“正在加载图片”，预加载前4张，再提示“加载完成”
+    // ✅ 修改：保存配置 => 立刻弹窗“正在加载图片...”，加载完成后再弹窗“加载完成”
     async function saveConfig() {
       if (!IS_HOST) return;
       const input = document.getElementById('imageUrlsInput').value;
@@ -1336,6 +1365,7 @@
 
       if (urls.length === 0) { alert('请至少输入一个图片链接！'); return; }
 
+      // 1) 保存配置
       imageUrls = urls;
       localStorage.setItem('animeGameImageUrls', JSON.stringify(imageUrls));
 
@@ -1347,41 +1377,47 @@
       showCurtain();
       resetCellsNoTransition();
 
-      // ✅ “弹窗提示正在加载图片” => 用页面中央 Loading 文案提示（不会阻塞预加载）
-      setLoadingUI(true, '正在加载图片...', '正在预加载前 4 张图片');
+      // 2) 立刻打开“不阻塞”的正在加载弹窗
+      openSaveLoadingModal('正在预加载前 4 张图片，并加载第 1 张…');
 
-      // ✅ 预加载前4张（不阻塞 UI）
-      const { ok, fail } = await preloadFirstN(imageUrls, 4, 12000);
+      // 页面中央也同步显示（更直观）
+      setLoadingUI(true, '正在加载图片...', '正在预加载前 4 张图片，并加载第 1 张…');
 
-      // ✅ 预加载完成提示（此处用 alert，不影响已完成预加载）
-      alert(`预加载前 4 张图片完成：成功 ${ok} 张，失败/超时 ${fail} 张。\n接下来点击「🧩 选择展示区块」开始游戏吧！`);
+      // 3) 预加载前4张（失败也继续）
+      try {
+        await preloadFirstN(imageUrls, 4, 12000);
+      } catch (e) {
+        console.warn('preloadFirstN error:', e);
+      }
 
-      // ✅ 显示第1张（loadImage 内部会接管 Loading 文案与超时提示）
-      loadImage(0, () => {
-        if (imageUrls.length === 0) return;
-
-        ensureGrid(true);
-        renderGridFromState();
-        updateStatus();
-        updateButtonsByState();
-
-        if (players.length > 0) {
-          document.getElementById('showFullBtn').disabled = false;
-          document.getElementById('nextImageBtn').disabled = false;
-          document.getElementById('revealAnswerBtn').disabled = false;
-        }
-
-        document.getElementById('confirmSelectionBtn').disabled = true;
-
-        updateSelectionCount();
-        broadcastState('save_config');
-        closeConfig();
-
-        // ✅ “图片加载完成”提示
-        alert(`图片加载完成！已载入 ${imageUrls.length} 张图片。`);
-
-        schedulePreloadAround(0);
+      // 4) 等第 1 张图片真正加载完成（成功/失败都算完成）
+      await new Promise((resolve) => {
+        loadImage(0, () => resolve());
       });
+
+      // 5) 收尾：关闭“正在加载”弹窗 + 关闭配置弹窗 + 提示完成
+      closeSaveLoadingModal();
+
+      ensureGrid(true);
+      renderGridFromState();
+      updateStatus();
+      updateButtonsByState();
+
+      if (players.length > 0 && imageUrls.length > 0) {
+        document.getElementById('showFullBtn').disabled = false;
+        document.getElementById('nextImageBtn').disabled = false;
+        document.getElementById('revealAnswerBtn').disabled = false;
+      }
+
+      document.getElementById('confirmSelectionBtn').disabled = true;
+      updateSelectionCount();
+
+      broadcastState('save_config');
+      closeConfig();
+
+      alert(`加载完成！已载入 ${imageUrls.length} 张图片。`);
+
+      schedulePreloadAround(0);
     }
 
     function resetProgressForNewImage(index) {
