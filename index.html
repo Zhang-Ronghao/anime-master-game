@@ -1,146 +1,1716 @@
-# 动漫高手 · 一眼顶针
-[游戏链接](https://davy-chendy.github.io/anime-master-game/)
+<!DOCTYPE html>
+<html lang="zh-CN">
 
-## 引言
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>动漫高手 · 一眼顶针</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-todo
+    body {
+      font-family: 'Microsoft YaHei', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
 
-## 玩法介绍
+    .container {
+      max-width: 1400px;
+      width: 100%;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      padding: 30px;
+    }
 
-完整图片被分割并遮挡，
-主持人逐步揭开部分区域，玩家根据当前画面猜出对应的动画作品，
-展示区域会随轮次逐渐增多，直到有人猜中为止。
+    /* ✅ 标题区 */
+    .title-bar {
+      position: relative;
+      margin-bottom: 20px;
+    }
 
-### 示例
+    h1 {
+      text-align: center;
+      color: #667eea;
+      margin-bottom: 0;
+      font-size: 2.5em;
+      line-height: 1.2;
+    }
 
-初始只显示少量区域：
-![示例1](./figures/exp1.png)
+    /* ✅ 左上角：分享题库按钮 */
+    .top-left-btn {
+      position: absolute;
+      left: 0;
+      top: 0;
+      padding: 10px 14px;
+      font-size: 0.95em;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: bold;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      white-space: nowrap;
+    }
+    .top-left-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,0.22); }
+    .top-left-btn:active { transform: translateY(0); }
 
-多轮后逐渐揭开：
-![示例2](./figures/exp2.png)
+    body.player-locked .top-left-btn { display: none !important; }
 
-## 游戏前配置
+    /* ✅ 标题右上角重置按钮 */
+    .top-reset-btn {
+      position: absolute;
+      right: 0;
+      top: 0;
+      padding: 10px 14px;
+      font-size: 0.95em;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: bold;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+      background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+      color: white;
+      white-space: nowrap;
+    }
 
-最高配置：朋友
+    .top-reset-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,0.22); }
+    .top-reset-btn:active { transform: translateY(0); }
 
-- 需要指定一名玩家作为 **主持人**
-   主持人在电脑上打开游戏，并将「玩家屏」窗口 **投屏 / 屏幕共享** 给所有答题者（如腾讯会议共享）。
-   主持人负责操作揭示方块与切换题目。
-   
-- **投屏软件**
-   仅试了腾讯会议，缺点是人多会有40min限时。有其它更好的软件欢迎分享
+    body.player-locked .top-reset-btn { display: none !important; }
 
-- **⚠️共享屏幕注意事项**
-  - 请勿最小化玩家屏
-  - 请勿让主持人屏以最大化状态完全遮挡玩家屏
-  - 建议主持人屏与玩家屏均使用 **窗口化模式**，以保证画面能够实时刷新
-  
-  
+    .role-badge {
+      display: inline-block;
+      margin-left: 10px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 14px;
+      vertical-align: middle;
+      background: #eef2ff;
+      color: #4338ca;
+      border: 1px solid #c7d2fe;
+    }
 
-![投屏示例](./figures/投屏示例.png)
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f8f9fa;
+      padding: 15px 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
 
+    .status-item { font-size: 1.1em; color: #333; }
+    .status-item strong { color: #667eea; }
 
+    /* 玩家计分板 */
+    .scoreboard {
+      background: linear-gradient(135deg, #fff9e6 0%, #ffe6cc 100%);
+      padding: 20px;
+      border-radius: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
 
+    .scoreboard-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 15px;
+    }
 
+    .scoreboard h2 {
+      color: #ff9800;
+      text-align: center;
+      font-size: 1.5em;
+      margin: 0;
+      flex: 1;
+    }
 
+    .scoreboard-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      align-items: center;
+      flex: 0 0 auto;
+    }
 
-## 🖼 如何把本地图片批量转成可用链接（图床方式）
+    .btn-mini {
+      padding: 10px 14px;
+      font-size: 0.95em;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: bold;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+      white-space: nowrap;
+    }
 
-本游戏题库需要使用**图片链接（URL）**。 如果只有本地图片，请先用图床转换成链接。
+    .btn-mini:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,0.22); }
+    .btn-mini:active { transform: translateY(0); }
+    .btn-mini-danger { background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%); color: white; }
 
-以 **ImgSea 图床（https://imgsea.com）** 为例：
+    .players-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
 
-### 第一步：上传图片
+    .player-card {
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
 
-1. 打开：https://imgsea.com   注册并登录账号  
-3. 上传你的图片（支持多选）
+    .player-info { flex: 1; }
+    .player-name { font-size: 1.2em; font-weight: bold; color: #333; margin-bottom: 5px; }
+    .player-score { font-size: 1.8em; color: #ff9800; font-weight: bold; }
 
-### 第二步：获取嵌入代码
+    .score-buttons { display: flex; gap: 5px; flex-direction: column; }
 
-进入个人主页后：
+    .score-btn {
+      width: 35px;
+      height: 35px;
+      border: none;
+      border-radius: 5px;
+      font-size: 1.2em;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
 
-1. **全选图片**
-2. 点击：**获取嵌入代码**
+    .score-btn.plus { background: #4CAF50; color: white; }
+    .score-btn.plus:hover { background: #45a049; transform: scale(1.1); }
 
-![获取嵌入代码](./figures/imgsea1.png)
+    .score-btn.minus { background: #f44336; color: white; }
+    .score-btn.minus:hover { background: #d32f2f; transform: scale(1.1); }
 
+    .game-area {
+      display: flex;
+      gap: 30px;
+      margin-bottom: 20px;
+      align-items: flex-start;
+    }
 
-### 第三步：选择“直接（源文件）链接”
+    .image-container {
+      flex: 1;
+      position: relative;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      min-height: 220px;
+    }
 
-在弹出的选项中选择：
+    .image-wrapper { position: relative; display: inline-block; width: 100%; }
+    #gameImage { width: 100%; height: auto; display: block; }
 
-👉 **直接（源文件）链接 / 图片URL链接**
+    /* ✅ “加载中...”居中 */
+    .loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 16px;
+      color: #666;
+      font-size: 1.2em;
+      z-index: 30;
+      pointer-events: none;
+      background: transparent;
+    }
+    .loading-inner { max-width: 560px; }
+    .loading-hint {
+      margin-top: 10px;
+      font-size: 0.95em;
+      color: #8b5e00;
+      line-height: 1.5;
+    }
 
-![选择直接源文件链接](./figures/imgsea2.png)
+    .grid-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(9, 1fr);
+      grid-template-rows: repeat(5, 1fr);
+      pointer-events: none;
+      z-index: 10;
+    }
 
+    /* ✅ 切图黑幕布 */
+    .curtain {
+      position: absolute;
+      inset: 0;
+      background: #000;
+      z-index: 9;
+      display: none;
+    }
 
-### 第四步：复制链接使用
+    .grid-cell {
+      border: none;
+      outline: 1px solid rgba(255, 255, 255, 0.3);
+      outline-offset: -1px;
+      cursor: pointer;
+      pointer-events: all;
+      transition: all 0.25s;
+    }
 
-你会得到一批图片链接，例如：
+    .no-transition .grid-cell { transition: none !important; }
 
-```txt
-https://imgsea.com/xxxx.jpg
-https://imgsea.com/yyyy.png
-https://imgsea.com/zzzz.webp
-```
-复制进游戏即可作为题库
+    .grid-cell.selectable:hover { background: rgba(102, 126, 234, 0.3); }
 
+    .grid-cell.selected {
+      background: rgba(255, 193, 7, 0.6);
+      border: 2px solid #ffc107;
+    }
 
+    /* ✅ 展示态：主持人/玩家一致（无绿色边框） */
+    .grid-cell.revealed {
+      background: transparent;
+      border: none;
+      box-shadow: none;
+    }
 
+    /* ✅ 主持人选块模式：提示“上一轮揭示过” */
+    .grid-cell.revealed-hint {
+      background: rgba(76, 175, 80, 0.55);
+    }
 
+    .grid-cell.covered { background: rgba(0, 0, 0, 1); }
 
-## 规则（自用）
-### 基本要求
+    .control-panel {
+      flex: 0 0 320px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
 
-- 参与人数：5 人
-- 每人准备 20 张图片，共 100 张
-- 图片范围限定为 **2005 年后日本动画** 的截图
-  - 包括日本动画电影
-  - 不包括真人剧
+    .btn {
+      padding: 14px 22px;
+      font-size: 1.05em;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: bold;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      white-space: nowrap;
+    }
 
-### 游戏流程概述
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3); }
+    .btn:active { transform: translateY(0); }
 
-- 游戏共进行 100 题
-- 每一题由一名玩家担任 **出题者**，其余玩家为 **答题者**
-- 出题者仅负责自己的题库，展示图片与选择遮挡区域，不参与本题抢答
+    .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+    .btn-success { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; }
+    .btn-warning { background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%); color: white; }
+    .btn-danger  { background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%); color: white; }
+    .btn-info    { background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%); color: white; }
 
-### 出题与展示方式
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-- 出题者从自己准备的 20 张图片中选择一张作为题目
-- 初始时，图片被划分为 **5 × 9 共 45 个大小相同的方块**，全部被遮挡
-- 题目将分多轮进行展示，每一轮出题者自行选择 **任意个方块** 进行展示
-- 每轮展示完成后，进入抢答阶段
-- 若无人抢答，则进入下一轮，继续展示新的方块
-- 若 45 个方块全部展示完毕仍无人抢答，则本题结束
+    .info-box {
+      background: #e3f2fd;
+      padding: 14px;
+      border-radius: 10px;
+      border-left: 4px solid #2196f3;
+    }
+    .info-box p { color: #555; line-height: 1.6; }
+    .info-box a {
+      color: #1976d2;
+      font-weight: 700;
+      text-decoration: underline;
+    }
 
-### 抢答规则
+    .selection-count {
+      background: #fff3cd;
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: bold;
+      color: #856404;
+    }
 
-- 每一轮展示后，设置 **10 秒抢答时间**
-- 抢答采取自由抢答制，允许多人在同一轮同时抢答
-- 每名答题者在**同一题目**中 **仅有一次抢答机会**
+    .config-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
 
-- 所有抢答但**未答对**的玩家，在本题中 **失去后续作答资格**
+    .config-modal.active { display: flex; }
 
-### 关于“无法猜出”的判定
+    /* ✅ 配置弹窗更宽一些 */
+    .config-content {
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      max-width: 860px;
+      width: 94%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
 
-- 游戏中不存在主动声明“无法猜出”的行为
-- 若一名答题者 **直到图片 45 个方块全部展示完毕仍未进行抢答**，则视为该玩家本题“无法猜出”
+    .config-content h2 { color: #667eea; margin-bottom: 20px; }
 
-### 积分规则
+    .config-content textarea {
+      width: 100%;
+      min-height: 300px;
+      padding: 15px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 14px;
+      margin-bottom: 15px;
+    }
 
-- 当 **有且仅有一位答题者首次抢答并回答正确** 时：
-  - 该答题者 **+1 分**
-  - 出题者 **+1 分**
-- 当 **所有答题者都进行抢答，且全部回答错误** 时：
-  - 出题者 **+1 分**
-- 当 **图片全部展示完毕，且至少有一名答题者未进行抢答** 时：
-  - 所有答题者 **各 +1 分**
+    /* ✅ 配置弹窗底部按钮：右对齐 + 同一尺寸 */
+    .config-buttons {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .config-buttons .btn {
+      min-width: 160px;
+      padding: 12px 18px;
+      font-size: 1.0em;
+    }
 
-### 补充说明
+    /* ✅ 新位置：放在说明文字下方、输入框上方 */
+    .library-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 6px 0 12px;
+    }
+    .library-row .btn {
+      min-width: 160px;
+      padding: 12px 18px;
+      font-size: 1.0em;
+    }
 
-- 出题者在本题中不参与抢答与得分判定（仅通过积分规则获得分数）
-- 所有得分情况均以题目结束时的状态为准
-- 游戏以总积分高低决定最终排名
+    /* ✅ 下拉：固定高度，避免抖动；并且可隐藏但不占用布局 */
+    .preset-select {
+      min-width: 260px;
+      height: 46px;
+      font-weight: 700;
+      border-radius: 10px;
+      border: 2px solid #ddd;
+      padding: 8px 12px;
+    }
+    .preset-hidden { display: none; }
 
+    /* 玩家设置模态框 */
+    .player-setup { margin-bottom: 20px; }
 
+    .player-input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 1em;
+    }
 
+    .player-count-selector { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+
+    .count-btn {
+      padding: 10px 20px;
+      border: 2px solid #667eea;
+      background: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1em;
+      font-weight: bold;
+      color: #667eea;
+      transition: all 0.2s;
+    }
+
+    .count-btn:hover { background: #667eea; color: white; }
+    .count-btn.active { background: #667eea; color: white; }
+
+    .player-names-input { display: none; }
+    .player-names-input.active { display: block; }
+
+    /* === 玩家屏锁定 === */
+    body.player-locked .control-panel,
+    body.player-locked .config-modal { display: none !important; }
+
+    body.player-locked .grid-overlay { pointer-events: none !important; }
+    body.player-locked .score-buttons { display: none !important; }
+
+    @media (max-width: 968px) {
+      .game-area { flex-direction: column; }
+      .control-panel { flex: 1; }
+      .scoreboard-header { flex-direction: column; }
+      .scoreboard-actions { width: 100%; justify-content: center; }
+      .top-reset-btn, .top-left-btn { position: static; width: 100%; margin-top: 10px; }
+      .title-bar { display: flex; flex-direction: column; gap: 8px; }
+
+      .library-row { flex-direction: column; align-items: stretch; }
+      .library-row .btn { width: 100%; min-width: 0; }
+      .preset-select { width: 100%; min-width: 0; }
+
+      .config-buttons .btn { width: 100%; min-width: 0; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="title-bar">
+      <button class="top-left-btn" id="shareLibraryBtn" onclick="openShareLibrary()">
+        分享您的题库
+      </button>
+
+      <h1>
+        🎮 动漫高手 · 一眼顶针
+        <span class="role-badge" id="roleBadge">role</span>
+      </h1>
+
+      <button class="top-reset-btn" id="resetAllBtnTop" onclick="resetAll()">
+        ♻️ 一键重置
+      </button>
+    </div>
+
+    <!-- 玩家计分板 -->
+    <div class="scoreboard" id="scoreboard" style="display:none;">
+      <div class="scoreboard-header">
+        <h2>🏆 玩家计分板</h2>
+        <div class="scoreboard-actions" id="scoreboardActions" style="display:none;">
+          <button class="btn-mini btn-mini-danger" onclick="clearAllScores()">🧹 清空分数</button>
+        </div>
+      </div>
+      <div class="players-grid" id="playersGrid"></div>
+    </div>
+
+    <div class="status-bar">
+      <div class="status-item">
+        <strong>当前图片：</strong> <span id="currentImage">0</span> / <span id="totalImages">0</span>
+      </div>
+      <div class="status-item">
+        <strong>当前轮次：</strong> <span id="currentRound">0</span>
+      </div>
+      <div class="status-item">
+        <strong>已展示方块：</strong> <span id="revealedCount">0</span> / 45
+      </div>
+    </div>
+
+    <div class="game-area">
+      <div class="image-container">
+        <div class="image-wrapper" id="imageWrapper">
+          <img id="gameImage" src="" alt="游戏图片" style="display:none;">
+          <div class="curtain" id="curtain"></div>
+          <div class="grid-overlay" id="gridOverlay"></div>
+        </div>
+
+        <div class="loading" id="loadingText" style="display:block;">
+          <div class="loading-inner">
+            <div id="loadingMain">请先设置玩家和图片</div>
+            <div class="loading-hint" id="loadingHint" style="display:none;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="control-panel" id="controlPanel">
+        <button class="btn btn-info" id="helpBtn" onclick="openHelp()">❓ 帮助</button>
+        <button class="btn btn-info" id="openPlayerBtn" onclick="openPlayerScreen()">🖥️ 打开玩家显示屏</button>
+        <button class="btn btn-info" id="playerSetupBtn" onclick="openPlayerSetup()">👥 设置玩家</button>
+        <button class="btn btn-info" id="configBtn" onclick="openConfig()">⚙️ 配置图片链接</button>
+
+        <div class="selection-count" id="selectionCount">已选择: 0 个方块</div>
+
+        <button class="btn btn-success" id="showFullBtn" onclick="showFullImage()" disabled>🧩 选择展示区块</button>
+        <button class="btn btn-primary" id="confirmSelectionBtn" onclick="confirmSelection()" disabled>✅ 确认选择并展示</button>
+        <button class="btn btn-warning" id="revealAnswerBtn" onclick="revealAnswerToAll()" disabled>🖼️ 向玩家展示完整图片（公布答案）</button>
+        <button class="btn btn-danger" id="nextImageBtn" onclick="nextImage()" disabled>⏭️ 下一张图片</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ 帮助弹窗 -->
+  <div class="config-modal" id="helpModal">
+    <div class="config-content">
+      <h2>❓ 帮助</h2>
+      <div class="info-box" style="margin-bottom: 15px;">
+        <p id="instructionText">
+          <b>【游戏前配置】</b><br>
+          点击「打开玩家显示屏」→ 将玩家窗口投屏给玩家（如腾讯会议共享）→ 点击「设置玩家」→ 点击「配置图片链接」<br><br>
+
+          <b>【游戏进行中】</b><br>
+          可多轮执行：点击「选择展示区块」→ 选择任意数量区块 → 点击「确认选择并展示」（玩家抢答）<br>
+          每张图片可重复多轮，直到有玩家答对 <br><br>
+
+          ⚠️ 注意：玩家屏不要最小化，主持人屏不要最大化完全遮挡玩家屏，否则画面可能无法实时刷新。<br><br>
+
+          <a href="https://github.com/Davy-Chendy/anime-master-game" target="_blank" rel="noopener noreferrer">📖 详细说明（可构建自己的题库）</a>
+        </p>
+      </div>
+      <div class="config-buttons">
+        <button class="btn btn-warning" onclick="closeHelp()">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 玩家设置模态框 -->
+  <div class="config-modal" id="playerSetupModal">
+    <div class="config-content">
+      <h2>👥 设置玩家</h2>
+      <div class="player-setup">
+        <p style="color: #666; margin-bottom: 15px;">请选择玩家人数：</p>
+        <div class="player-count-selector" id="playerCountSelector">
+          <button class="count-btn" onclick="selectPlayerCount(2)">2人</button>
+          <button class="count-btn" onclick="selectPlayerCount(3)">3人</button>
+          <button class="count-btn" onclick="selectPlayerCount(4)">4人</button>
+          <button class="count-btn" onclick="selectPlayerCount(5)">5人</button>
+          <button class="count-btn" onclick="selectPlayerCount(6)">6人</button>
+          <button class="count-btn" onclick="selectPlayerCount(7)">7人</button>
+          <button class="count-btn" onclick="selectPlayerCount(8)">8人</button>
+        </div>
+
+        <div class="player-names-input" id="playerNamesInput">
+          <p style="color: #666; margin-bottom: 10px;">请输入玩家名字：</p>
+          <div id="nameInputs"></div>
+        </div>
+      </div>
+      <div class="config-buttons">
+        <button class="btn btn-primary" onclick="savePlayerSetup()">💾 保存玩家设置</button>
+        <button class="btn btn-warning" onclick="closePlayerSetup()">❌ 取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 图片配置模态框 -->
+  <div class="config-modal" id="configModal">
+    <div class="config-content" style="position: relative;">
+      <!-- ✅ 右上角：分享您的题库 -->
+      <button
+        class="btn"
+        style="
+          position:absolute; top: 16px; right: 20px;
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          color: white;
+          min-width: 160px;
+          padding: 12px 18px;
+          font-size: 1.0em;
+          font-weight: bold;
+          border-radius: 10px;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        "
+        onclick="openShareLibrary()"
+        type="button"
+      >
+        分享您的题库
+      </button>
+
+      <h2>⚙️ 配置图片链接</h2>
+
+      <a href="https://github.com/Davy-Chendy/anime-master-game"
+        target="_blank"
+        rel="noopener noreferrer"
+        style="display: inline-block; margin: 6px 0 12px; color:#1a73e8; text-decoration: none;">
+        📖 如何构建自己的题库
+      </a>
+
+      <p style="color: #666; margin-bottom: 10px;">
+        每行一个图片URL，支持任何可访问的在线图片链接<br>
+        示例：https://example.com/pic1.jpg
+      </p>
+
+      <!-- ✅ 两按钮+隐藏下拉框 -->
+      <div class="library-row">
+        <button class="btn btn-info" type="button" onclick="openSharedLibrary()">
+          浏览共享题库
+        </button>
+
+        <button class="btn btn-info" type="button" onclick="togglePresetDropdown()">
+          作者预设题库
+        </button>
+
+        <select id="presetSelect" class="preset-select preset-hidden" onchange="applySelectedPreset()">
+          <option value="" selected disabled>请选择一个预设题库...</option>
+        </select>
+      </div>
+
+      <textarea id="imageUrlsInput"
+        placeholder="请输入图片链接，每行一个&#10;https://example.com/pic1.jpg&#10;https://example.com/pic2.jpg&#10;..."></textarea>
+
+      <!-- ✅ 底部：保存/取消 -->
+      <div class="config-buttons">
+        <button class="btn btn-primary" onclick="saveConfig()">💾 保存配置</button>
+        <button class="btn btn-warning" onclick="closeConfig()">❌ 取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ 保存配置：正在加载弹窗（不阻塞） -->
+  <div class="config-modal" id="saveLoadingModal">
+    <div class="config-content" style="max-width:520px;">
+      <h2 id="saveLoadingTitle" style="margin-bottom:12px;">⏳ 正在加载图片...</h2>
+      <div class="info-box">
+        <p id="saveLoadingText" style="margin:0; line-height:1.6;">
+          正在预加载图片并加载第 1 张，请稍候…
+        </p>
+      </div>
+      <div class="config-buttons" style="margin-top:14px;">
+        <button class="btn btn-warning" type="button" onclick="closeSaveLoadingModal()" disabled id="saveLoadingCloseBtn">
+          请稍候...
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const ROLE = (params.get('role') || 'host').toLowerCase();
+    const IS_HOST = ROLE !== 'player';
+
+    const CHANNEL_NAME = 'anime-game-sync-v4';
+    const channel = new BroadcastChannel(CHANNEL_NAME);
+
+    let currentImageIndex = 0;
+    let currentRound = 0;
+    let selectedCells = [];
+    let revealedCells = new Set();
+    let isFullImageMode = false;
+    let imageUrls = [];
+    let players = [];
+
+    let imageLoadToken = 0;
+    let loadingWarnTimer = null;
+
+    let answerRevealed = false;
+
+    const ROWS = 5, COLS = 9;
+    const TOTAL_CELLS = ROWS * COLS;
+
+    // ====== 作者预设题库（JSON）======
+    let presetBank = null;
+    let presetKeys = [];
+    let presetLoadedOnce = false;
+
+    async function loadPresetBankIfNeeded() {
+      if (presetLoadedOnce && presetBank) return;
+
+      const select = document.getElementById('presetSelect');
+
+      try {
+        const res = await fetch('./examples.json', { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+
+        const data = await res.json();
+        if (!data || typeof data !== 'object') throw new Error('examples.json 格式不是对象');
+
+        presetBank = data;
+
+        // ✅ 严格按 JSON 文件顺序（不 sort）
+        presetKeys = Object.keys(presetBank).filter(k => Array.isArray(presetBank[k]));
+
+        if (presetKeys.length === 0) throw new Error('examples.json 中没有可用题库数组（value 必须是数组）');
+
+        if (select) {
+          select.innerHTML = `<option value="" selected disabled>请选择一个预设题库...</option>`;
+          presetKeys.forEach(k => {
+            const opt = document.createElement('option');
+            opt.value = k;
+            opt.textContent = `${k}（${presetBank[k].length} 张）`;
+            select.appendChild(opt);
+          });
+        }
+
+        presetLoadedOnce = true;
+      } catch (e) {
+        console.error(e);
+        presetBank = null;
+        presetKeys = [];
+        presetLoadedOnce = false;
+        alert(
+          '读取 examples.json 失败。\n' +
+          '请确认 examples.json 与 index.html 在同一目录，并通过 http(s) 方式运行。\n\n' +
+          '错误信息：' + (e && e.message ? e.message : String(e))
+        );
+      }
+    }
+
+    async function togglePresetDropdown() {
+      if (!IS_HOST) return;
+      const select = document.getElementById('presetSelect');
+      if (!select) return;
+
+      await loadPresetBankIfNeeded();
+      if (!presetBank) return;
+
+      select.classList.remove('preset-hidden');
+
+      // ✅ 每次点“作者预设题库”，先把下拉框置回占位项
+      select.value = "";
+
+      setTimeout(() => { try { select.focus(); } catch (e) {} }, 0);
+    }
+
+    function applySelectedPreset() {
+      if (!IS_HOST) return;
+      const select = document.getElementById('presetSelect');
+      const textarea = document.getElementById('imageUrlsInput');
+      if (!select || !textarea) return;
+
+      const key = select.value;
+      if (!key || !presetBank || !Array.isArray(presetBank[key])) return;
+
+      textarea.value = '';
+
+      const urls = presetBank[key].map(s => String(s).trim()).filter(s => s.length > 0);
+      if (urls.length === 0) { alert('该预设题库为空。'); return; }
+
+      textarea.value = urls.join('\n');
+
+      // ✅ 用完就重置，保证下次可重复选同一个预设也能触发
+      select.value = "";
+      select.classList.add('preset-hidden');
+
+      alert(`已载入预设题库：${key}（${urls.length} 张）\n\n请点击「保存配置」使其生效。`);
+    }
+
+    // ========= 预加载（队列 + 并发控制）=========
+    const preloadCache = new Map();
+    let preloadQueue = [];
+    let preloadInFlight = 0;
+
+    const PRELOAD_LOOKAHEAD = 20;
+    const PRELOAD_CONCURRENCY = 4;
+
+    function enqueuePreload(urls) {
+      for (const url of urls) {
+        if (!url) continue;
+        const st = preloadCache.get(url)?.status;
+        if (st === 'loaded' || st === 'loading' || st === 'queued') continue;
+        preloadCache.set(url, { status: 'queued' });
+        preloadQueue.push(url);
+      }
+      pumpPreloadQueue();
+    }
+
+    function pumpPreloadQueue() {
+      while (preloadInFlight < PRELOAD_CONCURRENCY && preloadQueue.length > 0) {
+        const url = preloadQueue.shift();
+        const entry = preloadCache.get(url);
+        if (!entry || entry.status !== 'queued') continue;
+
+        entry.status = 'loading';
+        preloadInFlight++;
+
+        const img = new Image();
+        img.onload = () => {
+          const e = preloadCache.get(url);
+          if (e) e.status = 'loaded';
+          preloadInFlight--;
+          pumpPreloadQueue();
+        };
+        img.onerror = () => {
+          const e = preloadCache.get(url);
+          if (e) e.status = 'error';
+          preloadInFlight--;
+          pumpPreloadQueue();
+        };
+        img.src = url;
+      }
+    }
+
+    function schedulePreloadAround(index) {
+      if (!Array.isArray(imageUrls) || imageUrls.length <= 0) return;
+      const urls = [];
+      const maxK = Math.min(PRELOAD_LOOKAHEAD, imageUrls.length - 1);
+      for (let k = 1; k <= maxK; k++) {
+        const i = (index + k) % imageUrls.length;
+        urls.push(imageUrls[i]);
+      }
+      enqueuePreload(urls);
+    }
+
+    // ✅ 预加载前 N 张（用于“保存配置”时先热身前 4 张）
+    function preloadFirstN(urls, n = 4, timeoutMs = 12000) {
+      const list = (Array.isArray(urls) ? urls : []).slice(0, Math.max(0, n)).filter(Boolean);
+      if (list.length === 0) return Promise.resolve({ ok: 0, fail: 0 });
+
+      const preloadOne = (url) => new Promise((resolve) => {
+        const st = preloadCache.get(url)?.status;
+        if (st === 'loaded') return resolve({ url, ok: true });
+
+        const img = new Image();
+        let done = false;
+
+        const timer = setTimeout(() => {
+          if (done) return;
+          done = true;
+          resolve({ url, ok: false, reason: 'timeout' });
+        }, timeoutMs);
+
+        img.onload = () => {
+          if (done) return;
+          done = true;
+          clearTimeout(timer);
+          const e = preloadCache.get(url) || {};
+          preloadCache.set(url, { ...e, status: 'loaded' });
+          resolve({ url, ok: true });
+        };
+
+        img.onerror = () => {
+          if (done) return;
+          done = true;
+          clearTimeout(timer);
+          const e = preloadCache.get(url) || {};
+          preloadCache.set(url, { ...e, status: 'error' });
+          resolve({ url, ok: false, reason: 'error' });
+        };
+
+        img.src = url;
+      });
+
+      return Promise.all(list.map(preloadOne)).then(results => {
+        let ok = 0, fail = 0;
+        results.forEach(r => r.ok ? ok++ : fail++);
+        return { ok, fail };
+      });
+    }
+
+    // ========= 外链打开 =========
+    function openUrl(url) {
+      try { window.open(url, '_blank', 'noopener,noreferrer'); }
+      catch (e) { location.href = url; }
+    }
+
+    function openShareLibrary() {
+      if (!IS_HOST) return;
+      openUrl('https://docs.qq.com/smartsheet/form/YEXpcygKpwUW%2Ft0jKWP%2FvR7Tzr?tab=t0jKWP');
+    }
+
+    function openSharedLibrary() {
+      if (!IS_HOST) return;
+      openUrl('https://docs.qq.com/smartsheet/DWUVYcGN5Z0twd1VX?tab=t0jKWP');
+    }
+
+    // ========= Loading 控制 =========
+    function setLoadingUI(visible, mainText = '', hintText = '') {
+      const loading = document.getElementById('loadingText');
+      const main = document.getElementById('loadingMain');
+      const hint = document.getElementById('loadingHint');
+      if (!loading || !main || !hint) return;
+
+      if (!visible) {
+        loading.style.display = 'none';
+        hint.style.display = 'none';
+        hint.textContent = '';
+        main.textContent = '';
+        return;
+      }
+
+      loading.style.display = 'flex';
+      main.textContent = mainText || '';
+
+      if (hintText) {
+        hint.style.display = 'block';
+        hint.textContent = hintText;
+      } else {
+        hint.style.display = 'none';
+        hint.textContent = '';
+      }
+    }
+
+    function startLoadingWarnTimer(token) {
+      if (loadingWarnTimer) clearTimeout(loadingWarnTimer);
+      loadingWarnTimer = setTimeout(() => {
+        if (token !== imageLoadToken) return;
+        const msg = IS_HOST
+          ? '加载超过 10 秒：此图可能链接有问题。可直接点击「下一张图片」跳过本题。'
+          : '加载超过 10 秒';
+        const hint = document.getElementById('loadingHint');
+        if (hint) {
+          hint.style.display = 'block';
+          hint.textContent = msg;
+        }
+      }, 10000);
+    }
+
+    // ========= 保存配置：Loading 弹窗（不阻塞）=========
+    function openSaveLoadingModal(mainText = '正在预加载图片并加载第 1 张，请稍候…') {
+      const modal = document.getElementById('saveLoadingModal');
+      const text = document.getElementById('saveLoadingText');
+      const btn = document.getElementById('saveLoadingCloseBtn');
+      if (text) text.textContent = mainText;
+      if (btn) btn.disabled = true;
+      if (modal) modal.classList.add('active');
+    }
+
+    function closeSaveLoadingModal() {
+      const modal = document.getElementById('saveLoadingModal');
+      if (modal) modal.classList.remove('active');
+    }
+
+    // ========= 幕布 + 无过渡重置 =========
+    function showCurtain() { const c = document.getElementById('curtain'); if (c) c.style.display = 'block'; }
+    function hideCurtain() { const c = document.getElementById('curtain'); if (c) c.style.display = 'none'; }
+
+    function resetCellsNoTransition() {
+      const overlay = document.getElementById('gridOverlay');
+      if (!overlay) return;
+      overlay.classList.add('no-transition');
+      coverAllCells();
+      requestAnimationFrame(() => overlay.classList.remove('no-transition'));
+    }
+
+    // ✅ 帮助弹窗
+    function openHelp() { if (!IS_HOST) return; document.getElementById('helpModal').classList.add('active'); }
+    function closeHelp() { document.getElementById('helpModal').classList.remove('active'); }
+
+    // ========== 同步 ==========
+    function getGameState() {
+      return {
+        v: 4,
+        ts: Date.now(),
+        currentImageIndex,
+        currentRound,
+        imageUrls,
+        players,
+        revealedCells: Array.from(revealedCells),
+        answerRevealed
+      };
+    }
+
+    function broadcastState(reason = '') {
+      if (!IS_HOST) return;
+      channel.postMessage({ type: 'state', reason, state: getGameState() });
+    }
+
+    function applyGameState(state) {
+      const prevScrollY = (!IS_HOST) ? window.scrollY : 0;
+
+      if (Array.isArray(state.imageUrls)) imageUrls = state.imageUrls;
+      if (Array.isArray(state.players)) players = state.players;
+      if (typeof state.answerRevealed === 'boolean') answerRevealed = state.answerRevealed;
+
+      const nextImageIndex = Number(state.currentImageIndex || 0);
+      const nextRound = Number(state.currentRound || 0);
+      const nextRevealed = new Set(Array.isArray(state.revealedCells) ? state.revealedCells : []);
+
+      currentRound = nextRound;
+      revealedCells = nextRevealed;
+
+      renderScoreboard();
+
+      const img = document.getElementById('gameImage');
+      const wrapper = document.getElementById('imageWrapper');
+
+      const targetUrl = (imageUrls && imageUrls.length > 0) ? imageUrls[nextImageIndex] : '';
+      const alreadyLoadedThis =
+        !!img.src && !!targetUrl && (img.src === targetUrl || img.src.includes(targetUrl));
+      const needLoad = !!targetUrl && (!alreadyLoadedThis || nextImageIndex !== currentImageIndex);
+
+      currentImageIndex = nextImageIndex;
+      updateStatus();
+
+      if (imageUrls.length > 0) {
+        schedulePreloadAround(currentImageIndex);
+
+        if (needLoad) {
+          ensureGrid();
+          showCurtain();
+          resetCellsNoTransition();
+          loadImage(currentImageIndex, () => {
+            ensureGrid();
+            renderGridFromState();
+            updateStatus();
+            updateButtonsByState();
+          });
+        } else {
+          ensureGrid();
+          renderGridFromState();
+          updateStatus();
+          updateButtonsByState();
+        }
+      } else {
+        selectedCells = [];
+        isFullImageMode = false;
+
+        ensureGrid(true);
+        showCurtain();
+        resetCellsNoTransition();
+
+        if (img) { img.src = ''; img.style.display = 'none'; }
+        if (wrapper) { wrapper.style.display = 'none'; wrapper.style.visibility = 'visible'; wrapper.style.minHeight = ''; }
+
+        hideCurtain();
+        setLoadingUI(true, '请先设置玩家和图片', '');
+        updateStatus();
+        updateButtonsByState();
+      }
+
+      if (!IS_HOST) requestAnimationFrame(() => window.scrollTo(0, prevScrollY));
+    }
+
+    channel.onmessage = (ev) => {
+      const msg = ev.data;
+      if (!msg) return;
+
+      if (msg.type === 'state') {
+        if (IS_HOST) return;
+        if (!msg.state) return;
+        applyGameState(msg.state);
+      }
+
+      if (msg.type === 'request_state') {
+        if (!IS_HOST) return;
+        broadcastState('player_request_state');
+      }
+    };
+
+    // ========== 初始化 ==========
+    function init() {
+      document.getElementById('roleBadge').textContent = IS_HOST ? '主持人屏（HOST）' : '玩家屏（PLAYER）';
+
+      if (!IS_HOST) {
+        document.body.classList.add('player-locked');
+        isFullImageMode = false;
+      }
+
+      const savedPlayers = localStorage.getItem('animeGamePlayers');
+      if (savedPlayers) players = JSON.parse(savedPlayers);
+
+      const savedUrls = localStorage.getItem('animeGameImageUrls');
+      if (savedUrls) imageUrls = JSON.parse(savedUrls);
+
+      renderScoreboard();
+      ensureGrid();
+      updateSelectionCount();
+      updateStatus();
+
+      document.getElementById('scoreboardActions').style.display = IS_HOST ? 'flex' : 'none';
+
+      if (IS_HOST) {
+        if (imageUrls.length > 0 && players.length > 0) {
+          showCurtain();
+          loadImage(0, () => {
+            document.getElementById('showFullBtn').disabled = false;
+            document.getElementById('nextImageBtn').disabled = false;
+            document.getElementById('revealAnswerBtn').disabled = false;
+            updateButtonsByState();
+            broadcastState('init');
+          });
+          schedulePreloadAround(0);
+        } else {
+          updateButtonsByState();
+          setLoadingUI(true, '请先设置玩家和图片', '');
+        }
+      } else {
+        channel.postMessage({ type: 'request_state', ts: Date.now() });
+      }
+
+      if (!IS_HOST) {
+        const btn = document.getElementById('openPlayerBtn');
+        if (btn) btn.style.display = 'none';
+        const helpBtn = document.getElementById('helpBtn');
+        if (helpBtn) helpBtn.style.display = 'none';
+      }
+    }
+
+    function updateButtonsByState() {
+      if (!IS_HOST) return;
+
+      const hasReady = (imageUrls.length > 0 && players.length > 0);
+      const showFullBtn = document.getElementById('showFullBtn');
+      const confirmBtn = document.getElementById('confirmSelectionBtn');
+      const nextBtn = document.getElementById('nextImageBtn');
+      const revealBtn = document.getElementById('revealAnswerBtn');
+      if (!showFullBtn || !confirmBtn || !nextBtn || !revealBtn) return;
+
+      if (answerRevealed) {
+        showFullBtn.disabled = true;
+        confirmBtn.disabled = true;
+        revealBtn.disabled = true;
+        nextBtn.disabled = !hasReady;
+        return;
+      }
+
+      showFullBtn.disabled = !hasReady || isFullImageMode;
+      nextBtn.disabled = !hasReady;
+      revealBtn.disabled = !hasReady;
+
+      updateSelectionCount();
+    }
+
+    // ========== Host：打开玩家屏 ==========
+    function openPlayerScreen() {
+      if (!IS_HOST) return;
+      const url = new URL(window.location.href);
+      url.searchParams.set('role', 'player');
+      const w = window.open(url.toString(), 'animeGamePlayer', 'noopener,noreferrer');
+      if (!w) {
+        alert('浏览器拦截了弹窗。请允许弹窗后重试，或手动打开：\n' + url.toString());
+        return;
+      }
+      setTimeout(() => { try { w.focus(); } catch (e) { } }, 200);
+    }
+
+    // ========== 重置 ==========
+    function resetAll() {
+      if (!IS_HOST) return;
+      if (!confirm('确定要一键重置吗？这会清空玩家、分数、图片配置，并回到初始界面。')) return;
+
+      localStorage.removeItem('animeGamePlayers');
+      localStorage.removeItem('animeGameImageUrls');
+
+      players = [];
+      imageUrls = [];
+      currentImageIndex = 0;
+      currentRound = 0;
+      selectedCells = [];
+      revealedCells.clear();
+      isFullImageMode = false;
+      answerRevealed = false;
+
+      imageLoadToken++;
+      if (loadingWarnTimer) clearTimeout(loadingWarnTimer);
+
+      renderScoreboard();
+      ensureGrid(true);
+      showCurtain();
+      resetCellsNoTransition();
+      hideCurtain();
+
+      updateSelectionCount();
+      updateStatus();
+      updateButtonsByState();
+
+      const img = document.getElementById('gameImage');
+      const wrapper = document.getElementById('imageWrapper');
+      img.src = '';
+      img.style.display = 'none';
+      wrapper.style.display = 'none';
+      wrapper.style.visibility = 'visible';
+      wrapper.style.minHeight = '';
+
+      closeConfig();
+      closePlayerSetup();
+      closeHelp();
+      closeSaveLoadingModal();
+
+      setLoadingUI(true, '请先设置玩家和图片', '');
+
+      broadcastState('reset_all');
+      alert('已重置到初始状态。');
+    }
+
+    // ========== 清空分数 ==========
+    function clearAllScores() {
+      if (!IS_HOST) return;
+      if (players.length === 0) { alert('还没有玩家。'); return; }
+      if (!confirm('确定要清空所有玩家分数吗？')) return;
+
+      players = players.map(p => ({ ...p, score: 0 }));
+      localStorage.setItem('animeGamePlayers', JSON.stringify(players));
+      renderScoreboard();
+      broadcastState('clear_scores');
+    }
+
+    // ========== 玩家设置 ==========
+    function openPlayerSetup() {
+      if (!IS_HOST) return;
+      document.getElementById('playerSetupModal').classList.add('active');
+    }
+    function closePlayerSetup() {
+      document.getElementById('playerSetupModal').classList.remove('active');
+    }
+
+    function selectPlayerCount(count) {
+      if (!IS_HOST) return;
+      document.querySelectorAll('.count-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      const container = document.getElementById('nameInputs');
+      container.innerHTML = '';
+      for (let i = 0; i < count; i++) {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'player-input';
+        input.placeholder = `玩家 ${i + 1} 的名字`;
+        input.value = players[i] ? players[i].name : '';
+        container.appendChild(input);
+      }
+      document.getElementById('playerNamesInput').classList.add('active');
+    }
+
+    function savePlayerSetup() {
+      if (!IS_HOST) return;
+      const inputs = document.querySelectorAll('#nameInputs .player-input');
+      if (inputs.length === 0) { alert('请先选择玩家人数！'); return; }
+
+      const newPlayers = [];
+      let hasEmpty = false;
+
+      inputs.forEach((input, index) => {
+        const name = input.value.trim();
+        if (!name) { hasEmpty = true; return; }
+        newPlayers.push({ name, score: players[index] ? players[index].score : 0 });
+      });
+
+      if (hasEmpty) { alert('请填写所有玩家的名字！'); return; }
+
+      players = newPlayers;
+      localStorage.setItem('animeGamePlayers', JSON.stringify(players));
+      renderScoreboard();
+      closePlayerSetup();
+
+      if (imageUrls.length > 0) {
+        document.getElementById('showFullBtn').disabled = false;
+        document.getElementById('nextImageBtn').disabled = false;
+        document.getElementById('revealAnswerBtn').disabled = false;
+      }
+
+      updateButtonsByState();
+      broadcastState('save_players');
+      alert(`成功设置 ${players.length} 位玩家！`);
+
+      if (imageUrls.length > 0 && players.length > 0) {
+        setLoadingUI(false);
+        schedulePreloadAround(currentImageIndex);
+      }
+    }
+
+    function renderScoreboard() {
+      const container = document.getElementById('playersGrid');
+      container.innerHTML = '';
+
+      if (players.length === 0) {
+        document.getElementById('scoreboard').style.display = 'none';
+        return;
+      }
+
+      document.getElementById('scoreboard').style.display = 'block';
+
+      players.forEach((player, index) => {
+        const card = document.createElement('div');
+        card.className = 'player-card';
+        card.innerHTML = `
+          <div class="player-info">
+            <div class="player-name">${escapeHtml(player.name)}</div>
+            <div class="player-score">${player.score} 分</div>
+          </div>
+          <div class="score-buttons">
+            <button class="score-btn plus" onclick="addScore(${index}, 1)">+</button>
+            <button class="score-btn minus" onclick="addScore(${index}, -1)">−</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function addScore(playerIndex, delta) {
+      if (!IS_HOST) return;
+      players[playerIndex].score += delta;
+      if (players[playerIndex].score < 0) players[playerIndex].score = 0;
+      localStorage.setItem('animeGamePlayers', JSON.stringify(players));
+      renderScoreboard();
+      broadcastState('score_change');
+    }
+
+    // ========== 配置 ==========
+    function openConfig() {
+      if (!IS_HOST) return;
+      document.getElementById('configModal').classList.add('active');
+      document.getElementById('imageUrlsInput').value = imageUrls.join('\n');
+
+      const select = document.getElementById('presetSelect');
+      if (select) select.classList.add('preset-hidden');
+    }
+
+    function closeConfig() {
+      document.getElementById('configModal').classList.remove('active');
+    }
+
+    // ✅ 修改：保存配置 => 立刻弹窗“正在加载图片...”，加载完成后再弹窗“加载完成”
+    async function saveConfig() {
+      if (!IS_HOST) return;
+      const input = document.getElementById('imageUrlsInput').value;
+      const urls = input.split('\n').map(u => u.trim()).filter(u => u.length > 0);
+
+      if (urls.length === 0) { alert('请至少输入一个图片链接！'); return; }
+
+      // 1) 保存配置
+      imageUrls = urls;
+      localStorage.setItem('animeGameImageUrls', JSON.stringify(imageUrls));
+
+      answerRevealed = false;
+      resetProgressForNewImage(0);
+
+      updateStatus();
+
+      showCurtain();
+      resetCellsNoTransition();
+
+      // 2) 立刻打开“不阻塞”的正在加载弹窗
+      openSaveLoadingModal('正在预加载前 4 张图片，并加载第 1 张…');
+
+      // 页面中央也同步显示（更直观）
+      setLoadingUI(true, '正在加载图片...', '正在预加载前 4 张图片，并加载第 1 张…');
+
+      // 3) 预加载前4张（失败也继续）
+      try {
+        await preloadFirstN(imageUrls, 4, 12000);
+      } catch (e) {
+        console.warn('preloadFirstN error:', e);
+      }
+
+      // 4) 等第 1 张图片真正加载完成（成功/失败都算完成）
+      await new Promise((resolve) => {
+        loadImage(0, () => resolve());
+      });
+
+      // 5) 收尾：关闭“正在加载”弹窗 + 关闭配置弹窗 + 提示完成
+      closeSaveLoadingModal();
+
+      ensureGrid(true);
+      renderGridFromState();
+      updateStatus();
+      updateButtonsByState();
+
+      if (players.length > 0 && imageUrls.length > 0) {
+        document.getElementById('showFullBtn').disabled = false;
+        document.getElementById('nextImageBtn').disabled = false;
+        document.getElementById('revealAnswerBtn').disabled = false;
+      }
+
+      document.getElementById('confirmSelectionBtn').disabled = true;
+      updateSelectionCount();
+
+      broadcastState('save_config');
+      closeConfig();
+
+      alert(`加载完成！已载入 ${imageUrls.length} 张图片。`);
+
+      schedulePreloadAround(0);
+    }
+
+    function resetProgressForNewImage(index) {
+      currentImageIndex = index;
+      currentRound = 0;
+      selectedCells = [];
+      revealedCells.clear();
+      isFullImageMode = false;
+    }
+
+    function loadImage(index, onDone) {
+      if (index < 0 || index >= imageUrls.length) {
+        if (IS_HOST) alert('图片索引超出范围！');
+        return;
+      }
+
+      const token = ++imageLoadToken;
+      if (loadingWarnTimer) clearTimeout(loadingWarnTimer);
+
+      const img = document.getElementById('gameImage');
+      const wrapper = document.getElementById('imageWrapper');
+
+      setLoadingUI(true, '加载中...', '');
+      startLoadingWarnTimer(token);
+
+      const prevH = wrapper.offsetHeight || img.offsetHeight || 0;
+      wrapper.style.display = 'inline-block';
+      wrapper.style.visibility = 'hidden';
+      if (prevH > 0) wrapper.style.minHeight = prevH + 'px';
+
+      showCurtain();
+      ensureGrid();
+      resetCellsNoTransition();
+
+      img.style.display = 'none';
+
+      img.onload = function () {
+        if (token !== imageLoadToken) return;
+        if (loadingWarnTimer) clearTimeout(loadingWarnTimer);
+
+        wrapper.style.display = 'inline-block';
+        wrapper.style.visibility = 'visible';
+        wrapper.style.minHeight = '';
+
+        img.style.display = 'block';
+        syncGridOverlay();
+
+        setLoadingUI(false);
+
+        if (typeof onDone === 'function') onDone();
+
+        hideCurtain();
+
+        schedulePreloadAround(currentImageIndex);
+      };
+
+      img.onerror = function () {
+        if (token !== imageLoadToken) return;
+        if (loadingWarnTimer) clearTimeout(loadingWarnTimer);
+
+        const msg = IS_HOST
+          ? '图片加载失败：请检查链接，或直接点击「下一张图片」跳过本题。'
+          : '图片加载失败';
+
+        setLoadingUI(true, '图片加载失败，请检查链接', msg);
+
+        wrapper.style.visibility = 'visible';
+        wrapper.style.minHeight = '';
+        hideCurtain();
+
+        if (typeof onDone === 'function') onDone();
+      };
+
+      img.src = imageUrls[index];
+    }
+
+    function syncGridOverlay() {
+      const img = document.getElementById('gameImage');
+      const overlay = document.getElementById('gridOverlay');
+      overlay.style.width = img.offsetWidth + 'px';
+      overlay.style.height = img.offsetHeight + 'px';
+    }
+
+    window.addEventListener('resize', function () {
+      if (document.getElementById('gameImage').style.display !== 'none') syncGridOverlay();
+    });
+
+    function ensureGrid(forceRecreate = false) {
+      const overlay = document.getElementById('gridOverlay');
+      if (!overlay) return;
+      if (forceRecreate || overlay.children.length !== TOTAL_CELLS) createGrid();
+    }
+
+    function createGrid() {
+      const overlay = document.getElementById('gridOverlay');
+      overlay.innerHTML = '';
+      for (let i = 0; i < TOTAL_CELLS; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'grid-cell covered';
+        cell.dataset.index = i;
+        cell.onclick = () => selectCell(i);
+        overlay.appendChild(cell);
+      }
+    }
+
+    function coverAllCells() {
+      const cells = document.querySelectorAll('.grid-cell');
+      cells.forEach(cell => {
+        cell.classList.remove('selectable', 'selected', 'revealed', 'revealed-hint');
+        cell.classList.add('covered');
+      });
+    }
+
+    // ========== 出题流程 ==========
+    function showFullImage() {
+      if (!IS_HOST) return;
+      if (answerRevealed) return;
+
+      selectedCells = [];
+      isFullImageMode = true;
+
+      document.getElementById('showFullBtn').disabled = true;
+
+      updateSelectionCount();
+      renderGridFromState();
+      updateButtonsByState();
+    }
+
+    function selectCell(index) {
+      if (!IS_HOST) return;
+      if (!isFullImageMode) return;
+      if (answerRevealed) return;
+      if (revealedCells.has(index)) return;
+
+      const cell = document.querySelectorAll('.grid-cell')[index];
+      if (selectedCells.includes(index)) {
+        selectedCells = selectedCells.filter(i => i !== index);
+        cell.classList.remove('selected');
+      } else {
+        selectedCells.push(index);
+        cell.classList.add('selected');
+      }
+
+      updateSelectionCount();
+    }
+
+    function updateSelectionCount() {
+      const el = document.getElementById('selectionCount');
+      if (el) el.textContent = `已选择: ${selectedCells.length} 个方块`;
+
+      const confirmBtn = document.getElementById('confirmSelectionBtn');
+      if (confirmBtn) {
+        const canConfirm = IS_HOST && isFullImageMode && !answerRevealed && (selectedCells.length > 0);
+        confirmBtn.disabled = !canConfirm;
+      }
+    }
+
+    function confirmSelection() {
+      if (!IS_HOST) return;
+      if (!isFullImageMode) return;
+      if (answerRevealed) return;
+      if (selectedCells.length <= 0) return;
+
+      selectedCells.forEach(index => revealedCells.add(index));
+
+      currentRound++;
+      selectedCells = [];
+      isFullImageMode = false;
+
+      document.getElementById('confirmSelectionBtn').disabled = true;
+      document.getElementById('showFullBtn').disabled = false;
+
+      updateSelectionCount();
+      renderGridFromState();
+      updateStatus();
+      updateButtonsByState();
+      broadcastState('confirm_selection');
+    }
+
+    function revealAnswerToAll() {
+      if (!IS_HOST) return;
+      if (imageUrls.length === 0) return;
+
+      answerRevealed = true;
+      isFullImageMode = false;
+      selectedCells = [];
+
+      renderGridFromState();
+      updateButtonsByState();
+      broadcastState('reveal_answer');
+    }
+
+    // ========== 下一张 ==========
+    function nextImage() {
+      if (!IS_HOST) return;
+
+      if (!answerRevealed) {
+        if (!confirm('确定要进入下一张图片吗？当前进度将重置。')) return;
+      }
+
+      const wasLast = (imageUrls.length > 0 && currentImageIndex === imageUrls.length - 1);
+
+      let next = currentImageIndex + 1;
+      if (next >= imageUrls.length) next = 0;
+
+      if (wasLast && imageUrls.length > 0) {
+        alert('✅ 已完成一轮题库！即将回到第 1 张继续。');
+      }
+
+      resetProgressForNewImage(next);
+      answerRevealed = false;
+
+      updateStatus();
+      broadcastState('next_image_start');
+
+      schedulePreloadAround(currentImageIndex);
+
+      ensureGrid();
+      showCurtain();
+      resetCellsNoTransition();
+
+      loadImage(currentImageIndex, () => {
+        ensureGrid(true);
+        renderGridFromState();
+
+        document.getElementById('showFullBtn').disabled = false;
+        document.getElementById('confirmSelectionBtn').disabled = true;
+
+        updateStatus();
+        updateSelectionCount();
+        updateButtonsByState();
+        broadcastState('next_image_done');
+      });
+    }
+
+    // ========== 渲染 ==========
+    function renderGridFromState() {
+      const cells = document.querySelectorAll('.grid-cell');
+      if (!cells || cells.length === 0) return;
+
+      const inHostSelectMode = (IS_HOST && isFullImageMode);
+
+      if (answerRevealed) {
+        cells.forEach(cell => {
+          cell.classList.remove('selectable', 'selected', 'revealed', 'revealed-hint', 'covered');
+        });
+        return;
+      }
+
+      cells.forEach((cell, index) => {
+        cell.classList.remove('selectable', 'selected', 'revealed', 'revealed-hint');
+
+        if (inHostSelectMode) {
+          cell.classList.remove('covered');
+          cell.classList.add('selectable');
+
+          if (selectedCells.includes(index)) cell.classList.add('selected');
+          if (revealedCells.has(index)) cell.classList.add('revealed-hint');
+        }
+
+        if (revealedCells.has(index)) {
+          cell.classList.remove('covered');
+          cell.classList.add('revealed');
+          return;
+        }
+
+        if (!inHostSelectMode) cell.classList.add('covered');
+      });
+    }
+
+    function updateStatus() {
+      document.getElementById('currentImage').textContent = imageUrls.length ? (currentImageIndex + 1) : 0;
+      document.getElementById('totalImages').textContent = imageUrls.length;
+      document.getElementById('currentRound').textContent = currentRound;
+      document.getElementById('revealedCount').textContent = revealedCells.size;
+
+      if (IS_HOST) {
+        const ready = (imageUrls.length > 0 && players.length > 0);
+        document.getElementById('revealAnswerBtn').disabled = !ready || answerRevealed;
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    window.onload = init;
+  </script>
+</body>
+
+</html>
