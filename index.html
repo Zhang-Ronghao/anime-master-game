@@ -56,10 +56,9 @@
 
     body.player-locked .top-left-btn { display: none !important; }
 
-    /* ✅ 右上角：GitHub 按钮（放在重置按钮左侧） */
     .top-github-btn {
       position: absolute;
-      right: 140px; /* 给右侧重置按钮留位置（重置按钮宽度大约 120-140） */
+      right: 140px;
       top: 0;
       padding: 10px 14px;
       font-size: 0.95em;
@@ -82,7 +81,6 @@
     @media (max-width: 968px) {
       .top-github-btn { position: static; width: 100%; margin-top: 10px; }
     }
-
 
     .top-reset-btn {
       position: absolute; right: 0; top: 0;
@@ -622,7 +620,7 @@
     <div class="config-content" style="max-width:520px;">
       <h2 id="saveLoadingTitle" style="margin-bottom:12px;">⏳ 正在加载图片...</h2>
       <div class="info-box">
-        <p id="saveLoadingText" style="margin:0; line-height:1.6;">正在预加载图片并加载第 1 张，请稍候…</p>
+        <p id="saveLoadingText" style="margin:0; line-height:1.6;">正在加载第 1 张图片，请稍候…</p>
       </div>
       <div class="config-buttons" style="margin-top:14px;">
         <button class="btn btn-warning" type="button" onclick="closeSaveLoadingModal()" disabled id="saveLoadingCloseBtn">
@@ -660,8 +658,6 @@
     const playerImg = new Image();
     playerImg.decoding = 'async';
     let playerImgReady = false;
-
-    // ✅ 修复关键：记录玩家端“已加载的 url”
     let playerCurrentUrl = '';
 
     function getCellRectByIndex(i, W, H) {
@@ -726,13 +722,11 @@
       const CW = canvas.width;
       const CH = canvas.height;
 
-      // 全黑底
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, CW, CH);
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, CW, CH);
 
-      // 没图就保持黑
       if (!playerImgReady || !playerImg.naturalWidth || !playerImg.naturalHeight) return;
 
       const natW = playerImg.naturalWidth;
@@ -840,105 +834,115 @@
       alert(`已载入预设题库：${key}（${urls.length} 张）\n\n请点击「保存配置」使其生效。`);
     }
 
-    // ========= 预加载（略，保留你原逻辑）=========
-    const preloadCache = new Map();
+    // ========= 预加载：真·滑动窗口（只 Host 预加载 + 当前图绝对优先）=========
+    const PRELOAD_LOOKAHEAD = 6;     // ✅ 只预加载未来 N 张
+    const PRELOAD_CONCURRENCY = 1;   // ✅ 并发 1（最稳）
+
+    const preloadCache = new Map();  // url -> { status, ts }
     let preloadQueue = [];
     let preloadInFlight = 0;
+    let preloadDesired = new Set();
+    let preloadPaused = false;
 
-    const PRELOAD_LOOKAHEAD = 20;
-    const PRELOAD_CONCURRENCY = 4;
+    function setPreloadPaused(paused) {
+      preloadPaused = !!paused;
+      if (!preloadPaused) pumpPreloadQueue();
+    }
 
-    function enqueuePreload(urls) {
-      for (const url of urls) {
-        if (!url) continue;
-        const st = preloadCache.get(url)?.status;
-        if (st === 'loaded' || st === 'loading' || st === 'queued') continue;
-        preloadCache.set(url, { status: 'queued' });
-        preloadQueue.push(url);
+    function computeWindowUrls(index) {
+      if (!Array.isArray(imageUrls) || imageUrls.length <= 1) return [];
+      const L = imageUrls.length;
+      const n = Math.min(PRELOAD_LOOKAHEAD, L - 1);
+      const out = [];
+      for (let k = 1; k <= n; k++) {
+        const i = (index + k) % L;
+        const url = imageUrls[i];
+        if (url) out.push(url);
       }
+      return out;
+    }
+
+    function updatePreloadWindow(index) {
+      if (!IS_HOST) return; // ✅ Player 不预加载
+      const windowUrls = computeWindowUrls(index);
+      const desired = new Set(windowUrls);
+      preloadDesired = desired;
+
+      // queue 只保留窗口内
+      preloadQueue = preloadQueue.filter(u => preloadDesired.has(u));
+
+      // cache 只保留窗口内 + loading（窗口外且非 loading 的直接清掉，避免无限增长）
+      for (const [url, entry] of preloadCache.entries()) {
+        if (!preloadDesired.has(url) && entry && entry.status !== 'loading') {
+          preloadCache.delete(url);
+        }
+      }
+
+      // 按窗口顺序补齐 queue
+      for (const url of windowUrls) {
+        const st = preloadCache.get(url)?.status;
+        if (st === 'loaded' || st === 'loading') continue;
+
+        if (!preloadQueue.includes(url)) preloadQueue.push(url);
+        preloadCache.set(url, { status: 'queued', ts: Date.now() });
+      }
+
       pumpPreloadQueue();
     }
 
     function pumpPreloadQueue() {
+      if (!IS_HOST) return;
+      if (preloadPaused) return; // ✅ 当前图加载期间不启动预加载（绝对优先）
       while (preloadInFlight < PRELOAD_CONCURRENCY && preloadQueue.length > 0) {
         const url = preloadQueue.shift();
+        if (!url) continue;
+
+        if (!preloadDesired.has(url)) {
+          preloadCache.delete(url);
+          continue;
+        }
+
         const entry = preloadCache.get(url);
         if (!entry || entry.status !== 'queued') continue;
 
         entry.status = 'loading';
+        entry.ts = Date.now();
         preloadInFlight++;
 
         const img = new Image();
+        img.decoding = 'async';
+        try { img.referrerPolicy = 'no-referrer'; } catch (e) {}
+
         img.onload = () => {
-          const e = preloadCache.get(url);
-          if (e) e.status = 'loaded';
           preloadInFlight--;
+          const e = preloadCache.get(url);
+          if (e) {
+            if (!preloadDesired.has(url)) preloadCache.delete(url);
+            else { e.status = 'loaded'; e.ts = Date.now(); }
+          }
           pumpPreloadQueue();
         };
+
         img.onerror = () => {
-          const e = preloadCache.get(url);
-          if (e) e.status = 'error';
           preloadInFlight--;
+          const e = preloadCache.get(url);
+          if (e) {
+            if (!preloadDesired.has(url)) preloadCache.delete(url);
+            else { e.status = 'error'; e.ts = Date.now(); }
+          }
           pumpPreloadQueue();
         };
+
         img.src = url;
       }
     }
 
-    function schedulePreloadAround(index) {
-      if (!Array.isArray(imageUrls) || imageUrls.length <= 0) return;
-      const urls = [];
-      const maxK = Math.min(PRELOAD_LOOKAHEAD, imageUrls.length - 1);
-      for (let k = 1; k <= maxK; k++) {
-        const i = (index + k) % imageUrls.length;
-        urls.push(imageUrls[i]);
-      }
-      enqueuePreload(urls);
-    }
-
-    function preloadFirstN(urls, n = 4, timeoutMs = 12000) {
-      const list = (Array.isArray(urls) ? urls : []).slice(0, Math.max(0, n)).filter(Boolean);
-      if (list.length === 0) return Promise.resolve({ ok: 0, fail: 0 });
-
-      const preloadOne = (url) => new Promise((resolve) => {
-        const st = preloadCache.get(url)?.status;
-        if (st === 'loaded') return resolve({ url, ok: true });
-
-        const img = new Image();
-        let done = false;
-
-        const timer = setTimeout(() => {
-          if (done) return;
-          done = true;
-          resolve({ url, ok: false, reason: 'timeout' });
-        }, timeoutMs);
-
-        img.onload = () => {
-          if (done) return;
-          done = true;
-          clearTimeout(timer);
-          const e = preloadCache.get(url) || {};
-          preloadCache.set(url, { ...e, status: 'loaded' });
-          resolve({ url, ok: true });
-        };
-
-        img.onerror = () => {
-          if (done) return;
-          done = true;
-          clearTimeout(timer);
-          const e = preloadCache.get(url) || {};
-          preloadCache.set(url, { ...e, status: 'error' });
-          resolve({ url, ok: false, reason: 'error' });
-        };
-
-        img.src = url;
-      });
-
-      return Promise.all(list.map(preloadOne)).then(results => {
-        let ok = 0, fail = 0;
-        results.forEach(r => r.ok ? ok++ : fail++);
-        return { ok, fail };
-      });
+    function resetPreloadAll() {
+      preloadCache.clear();
+      preloadQueue = [];
+      preloadInFlight = 0;
+      preloadDesired = new Set();
+      preloadPaused = false;
     }
 
     // ========= 外链打开 =========
@@ -948,9 +952,7 @@
     }
     function openShareLibrary() { if (!IS_HOST) return; openUrl('https://docs.qq.com/smartsheet/form/YEXpcygKpwUW%2Ft0jKWP%2FvR7Tzr?tab=t0jKWP'); }
     function openSharedLibrary() { if (!IS_HOST) return; openUrl('https://docs.qq.com/smartsheet/DWUVYcGN5Z0twd1VX?tab=t0jKWP'); }
-    function openGithub() {
-      openUrl('https://github.com/Davy-Chendy/anime-master-game');
-    }
+    function openGithub() { openUrl('https://github.com/Davy-Chendy/anime-master-game'); }
 
     // ========= Loading 控制 =========
     function setLoadingUI(visible, mainText = '', hintText = '') {
@@ -995,7 +997,7 @@
     }
 
     // ========= 保存配置弹窗 =========
-    function openSaveLoadingModal(mainText = '正在预加载图片并加载第 1 张，请稍候…') {
+    function openSaveLoadingModal(mainText = '正在加载第 1 张图片，请稍候…') {
       const modal = document.getElementById('saveLoadingModal');
       const text = document.getElementById('saveLoadingText');
       const btn = document.getElementById('saveLoadingCloseBtn');
@@ -1060,7 +1062,6 @@
 
       const targetUrl = (imageUrls && imageUrls.length > 0) ? imageUrls[nextImageIndex] : '';
 
-      // ✅ 修复关键：玩家端如果“没加载过当前 url”，必须 load（即使 index 没变）
       let needLoad;
       if (IS_HOST) {
         needLoad = !!targetUrl && (nextImageIndex !== currentImageIndex);
@@ -1074,15 +1075,14 @@
       const ready = (imageUrls.length > 0 && players.length > 0);
 
       if (ready) {
-        // 玩家端一旦收到 ready 的 state，不应该还显示“请先设置玩家和图片”
-        // 是否隐藏 loading 由 loadImage 成功后再关；这里至少把提示改为“等待加载”
         if (!IS_HOST) setLoadingUI(true, '正在同步题目...', '');
       } else {
         setLoadingUI(true, '请先设置玩家和图片', '');
       }
 
       if (imageUrls.length > 0) {
-        schedulePreloadAround(currentImageIndex);
+        if (IS_HOST) updatePreloadWindow(currentImageIndex); // ✅ Host 预加载（Player 不预加载）
+
         ensureGrid();
 
         if (needLoad) {
@@ -1096,7 +1096,6 @@
               updateButtonsByState();
             });
           } else {
-            // Player: 先黑，再加载
             playerImgReady = false;
             drawPlayerCanvasFromState();
             loadImage(currentImageIndex, () => {
@@ -1108,7 +1107,6 @@
         } else {
           renderGridFromState();
           if (!IS_HOST) {
-            // 玩家端即使不需要重新 load，也要确保尺寸同步+重画
             ensurePlayerCanvasSized();
             drawPlayerCanvasFromState();
             if (ready) setLoadingUI(false);
@@ -1186,13 +1184,12 @@
             updateButtonsByState();
             broadcastState('init');
           });
-          schedulePreloadAround(0);
+          updatePreloadWindow(0); // ✅ Host 预加载窗口
         } else {
           updateButtonsByState();
           setLoadingUI(true, '请先设置玩家和图片', '');
         }
       } else {
-        // ✅ 玩家端：先显示“等待主持人同步”
         setLoadingUI(true, '等待主持人同步题库...', '');
         playerImgReady = false;
         playerCurrentUrl = '';
@@ -1270,6 +1267,8 @@
       revealedCells.clear();
       isFullImageMode = false;
       answerRevealed = false;
+
+      resetPreloadAll(); // ✅ 清空预加载窗口状态
 
       imageLoadToken++;
       if (loadingWarnTimer) clearTimeout(loadingWarnTimer);
@@ -1368,7 +1367,7 @@
 
       if (imageUrls.length > 0 && players.length > 0) {
         setLoadingUI(false);
-        schedulePreloadAround(currentImageIndex);
+        if (IS_HOST) updatePreloadWindow(currentImageIndex);
       }
     }
 
@@ -1433,17 +1432,21 @@
       answerRevealed = false;
       resetProgressForNewImage(0);
 
+      // ✅ 新题库：重置预加载窗口（避免旧 cache 干扰）
+      resetPreloadAll();
+
       updateStatus();
 
       showCurtain();
       resetCellsNoTransition();
 
-      openSaveLoadingModal('正在预加载前 4 张图片，并加载第 1 张…');
-      setLoadingUI(true, '正在加载图片...', '正在预加载前 4 张图片，并加载第 1 张…');
-
-      try { await preloadFirstN(imageUrls, 4, 12000); } catch (e) { console.warn('preloadFirstN error:', e); }
+      openSaveLoadingModal('正在加载第 1 张图片（当前图优先），并准备预加载未来几张…');
+      setLoadingUI(true, '正在加载图片...', '正在加载第 1 张（当前图优先），稍候将预加载未来几张…');
 
       await new Promise((resolve) => { loadImage(0, () => resolve()); });
+
+      // ✅ 当前图结束后再启动窗口预加载（Host）
+      updatePreloadWindow(0);
 
       closeSaveLoadingModal();
 
@@ -1465,7 +1468,6 @@
       closeConfig();
 
       alert(`加载完成！已载入 ${imageUrls.length} 张图片。`);
-      schedulePreloadAround(0);
     }
 
     function resetProgressForNewImage(index) {
@@ -1491,6 +1493,11 @@
       const url = imageUrls[index];
 
       if (IS_HOST) {
+        // ✅ 当前图绝对优先：加载当前图期间暂停启动预加载
+        setPreloadPaused(true);
+        // ✅ 更新窗口目标（队列准备好，但 paused 不会启动预加载请求）
+        updatePreloadWindow(index);
+
         const img = document.getElementById('gameImage');
         const wrapper = document.getElementById('imageWrapper');
 
@@ -1522,7 +1529,9 @@
 
           hideCurtain();
 
-          schedulePreloadAround(currentImageIndex);
+          // ✅ 当前图加载完成：恢复预加载，并让窗口跟随当前图
+          setPreloadPaused(false);
+          updatePreloadWindow(currentImageIndex);
         };
 
         img.onerror = function () {
@@ -1537,22 +1546,31 @@
           hideCurtain();
 
           if (typeof onDone === 'function') onDone();
+
+          // ✅ 失败也恢复预加载（以免卡死在 paused）
+          setPreloadPaused(false);
+          updatePreloadWindow(currentImageIndex);
         };
+
+        // 可选：降低 Referer 导致的防盗链概率（成本低）
+        try { img.referrerPolicy = 'no-referrer'; } catch (e) {}
 
         img.src = url;
         return;
       }
 
-      // Player: 离屏加载到 playerImg，然后 canvas 白名单绘制
+      // Player: 离屏加载到 playerImg，然后 canvas 白名单绘制（✅ 不预加载）
       playerImgReady = false;
       drawPlayerCanvasFromState();
+
+      try { playerImg.referrerPolicy = 'no-referrer'; } catch (e) {}
 
       playerImg.onload = function () {
         if (token !== imageLoadToken) return;
         if (loadingWarnTimer) clearTimeout(loadingWarnTimer);
 
         playerImgReady = true;
-        playerCurrentUrl = url; // ✅ 修复关键：记住已加载 url
+        playerCurrentUrl = url;
 
         ensurePlayerCanvasSized();
         setLoadingUI(false);
@@ -1560,7 +1578,6 @@
         drawPlayerCanvasFromState();
 
         if (typeof onDone === 'function') onDone();
-        schedulePreloadAround(currentImageIndex);
       };
 
       playerImg.onerror = function () {
@@ -1706,7 +1723,7 @@
       updateStatus();
       broadcastState('next_image_start');
 
-      schedulePreloadAround(currentImageIndex);
+      if (IS_HOST) updatePreloadWindow(currentImageIndex);
 
       ensureGrid();
       showCurtain();
