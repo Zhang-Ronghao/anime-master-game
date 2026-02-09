@@ -76,7 +76,7 @@ todo
 
 ![选择直接源文件链接](./figures/imgsea2.png)
 
-⚠️注意：不是查看链接（此类没有图片后缀，例如https://imgsea.com/image/QXJf），一定要是以jpg png等图片后缀结尾的链接
+⚠️注意：不是查看链接（此类没有图片后缀，例如https://imgsea.com/image/QXJf ），一定要是以.jpg .png等图片后缀结尾的链接
 
 ### 第四步：复制链接使用
 
