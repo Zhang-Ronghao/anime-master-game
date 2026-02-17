@@ -226,11 +226,13 @@
       min-height: 220px;
     }
 
-    .image-wrapper { position: relative; display: inline-block; width: 100%; }
+    /* ✅ 不再强制 width:100%，由 JS 给 wrapper 写明确宽高 */
+    .image-wrapper { position: relative; display: inline-block; }
 
-    #gameImage { width: 100%; height: auto; display: block; }
+    /* ✅ 图像/Canvas 填满 wrapper（wrapper 已按规则等比计算，不会变形） */
+    #gameImage { width: 100%; height: 100%; display: block; object-fit: fill; }
+    #playerCanvas { width: 100%; height: 100%; display: none; }
 
-    #playerCanvas { width: 100%; height: auto; display: none; }
     body.player-locked #playerCanvas { display: block; }
     body.player-locked #gameImage { display: none !important; }
 
@@ -261,10 +263,11 @@
       top: 0; left: 0;
       width: 100%; height: 100%;
       display: grid;
-      grid-template-columns: repeat(9, 1fr);
-      grid-template-rows: repeat(5, 1fr);
       pointer-events: none;
       z-index: 10;
+      /* 默认值（会被 JS 覆盖） */
+      grid-template-columns: repeat(9, 1fr);
+      grid-template-rows: repeat(5, 1fr);
     }
 
     .curtain {
@@ -481,7 +484,7 @@
     <div class="status-bar">
       <div class="status-item"><strong>当前图片：</strong> <span id="currentImage">0</span> / <span id="totalImages">0</span></div>
       <div class="status-item"><strong>当前轮次：</strong> <span id="currentRound">0</span></div>
-      <div class="status-item"><strong>已展示方块：</strong> <span id="revealedCount">0</span> / 45</div>
+      <div class="status-item"><strong>已展示方块：</strong> <span id="revealedCount">0</span> / <span id="totalCells">45</span></div>
     </div>
 
     <div class="game-area">
@@ -651,8 +654,9 @@
 
     let answerRevealed = false;
 
-    const ROWS = 5, COLS = 9;
-    const TOTAL_CELLS = ROWS * COLS;
+    // ✅ 网格：横图 9×5（45），竖图 6×9（54）
+    let ROWS = 5, COLS = 9;
+    let TOTAL_CELLS = ROWS * COLS;
 
     // ===== 玩家屏 Canvas 白名单绘制 =====
     const playerImg = new Image();
@@ -670,16 +674,84 @@
       return { r, c, sx, sy, sw, sh };
     }
 
+    // ✅ 竖图显示规则：
+    // - 横图：宽度填满左侧显示区（container 宽度）
+    // - 竖图：高度固定为 “同宽度下 16:9 图应有的高度”，宽度按比例缩小
+    function fitWrapperBy16x9Rule(natW, natH) {
+      const container = document.querySelector('.image-container');
+      const wrapper = document.getElementById('imageWrapper');
+      if (!container || !wrapper) return;
+
+      const maxW = Math.max(1, container.clientWidth);
+      const targetH = Math.max(1, Math.floor(maxW * 9 / 16));
+
+      const isPortrait = (natH > natW);
+
+      let displayW, displayH;
+
+      if (!isPortrait) {
+        displayW = maxW;
+        displayH = Math.max(1, Math.floor(maxW * (natH / natW)));
+      } else {
+        displayH = targetH;
+        displayW = Math.max(1, Math.floor(targetH * (natW / natH)));
+
+        if (displayW > maxW) {
+          displayW = maxW;
+          displayH = Math.max(1, Math.floor(maxW * (natH / natW)));
+        }
+      }
+
+      wrapper.style.width = displayW + 'px';
+      wrapper.style.height = displayH + 'px';
+
+      syncGridOverlayToTarget();
+    }
+
+    function setGridByAspect(natW, natH, forceReset = false) {
+      const ratio = natW / natH; // 宽高比
+      if (ratio < 0.9) {
+        // ✅ 竖屏：6×9
+        ROWS = 9;
+        COLS = 6;
+      } else {
+        // ✅ 横屏：9×5
+        ROWS = 5;
+        COLS = 9;
+      }
+
+      TOTAL_CELLS = ROWS * COLS;
+
+      const overlay = document.getElementById('gridOverlay');
+      if (overlay) {
+        overlay.style.gridTemplateColumns = `repeat(${COLS}, 1fr)`;
+        overlay.style.gridTemplateRows = `repeat(${ROWS}, 1fr)`;
+      }
+
+      const totalEl = document.getElementById('totalCells');
+      if (totalEl) totalEl.textContent = String(TOTAL_CELLS);
+
+      // 新图或强制切网格：清空选择/展示（避免 index 残留）
+      if (forceReset) {
+        selectedCells = [];
+        revealedCells.clear();
+        isFullImageMode = false;
+        answerRevealed = false;
+      }
+
+      ensureGrid(true);
+      updateSelectionCount();
+      updateStatus();
+    }
+
     function ensurePlayerCanvasSized() {
       const canvas = document.getElementById('playerCanvas');
       const wrapper = document.getElementById('imageWrapper');
       if (!canvas || !wrapper) return;
 
+      // ✅ wrapper 尺寸已由 fitWrapperBy16x9Rule() 计算好
       const displayW = Math.max(1, Math.floor(wrapper.clientWidth || 1));
-
-      const natW = playerImgReady ? (playerImg.naturalWidth || 1) : 16;
-      const natH = playerImgReady ? (playerImg.naturalHeight || 1) : 9;
-      const displayH = Math.max(1, Math.floor(displayW * (natH / natW)));
+      const displayH = Math.max(1, Math.floor(wrapper.clientHeight || 1));
 
       const dpr = window.devicePixelRatio || 1;
       canvas.width = Math.max(1, Math.floor(displayW * dpr));
@@ -693,20 +765,11 @@
 
     function syncGridOverlayToTarget() {
       const overlay = document.getElementById('gridOverlay');
-      const canvas = document.getElementById('playerCanvas');
-      const img = document.getElementById('gameImage');
-      if (!overlay) return;
-
-      if (!IS_HOST && canvas) {
-        const rect = canvas.getBoundingClientRect();
-        overlay.style.width = rect.width + 'px';
-        overlay.style.height = rect.height + 'px';
-        return;
-      }
-      if (IS_HOST && img) {
-        overlay.style.width = img.offsetWidth + 'px';
-        overlay.style.height = img.offsetHeight + 'px';
-      }
+      const wrapper = document.getElementById('imageWrapper');
+      if (!overlay || !wrapper) return;
+      // overlay 已是 100% 贴住 wrapper，这里仅在需要时触发 reflow
+      overlay.style.width = '100%';
+      overlay.style.height = '100%';
     }
 
     function drawPlayerCanvasFromState() {
@@ -835,10 +898,10 @@
     }
 
     // ========= 预加载：真·滑动窗口（只 Host 预加载 + 当前图绝对优先）=========
-    const PRELOAD_LOOKAHEAD = 6;     // ✅ 只预加载未来 N 张
-    const PRELOAD_CONCURRENCY = 1;   // ✅ 并发 1（最稳）
+    const PRELOAD_LOOKAHEAD = 6;
+    const PRELOAD_CONCURRENCY = 1;
 
-    const preloadCache = new Map();  // url -> { status, ts }
+    const preloadCache = new Map();
     let preloadQueue = [];
     let preloadInFlight = 0;
     let preloadDesired = new Set();
@@ -863,22 +926,19 @@
     }
 
     function updatePreloadWindow(index) {
-      if (!IS_HOST) return; // ✅ Player 不预加载
+      if (!IS_HOST) return;
       const windowUrls = computeWindowUrls(index);
       const desired = new Set(windowUrls);
       preloadDesired = desired;
 
-      // queue 只保留窗口内
       preloadQueue = preloadQueue.filter(u => preloadDesired.has(u));
 
-      // cache 只保留窗口内 + loading（窗口外且非 loading 的直接清掉，避免无限增长）
       for (const [url, entry] of preloadCache.entries()) {
         if (!preloadDesired.has(url) && entry && entry.status !== 'loading') {
           preloadCache.delete(url);
         }
       }
 
-      // 按窗口顺序补齐 queue
       for (const url of windowUrls) {
         const st = preloadCache.get(url)?.status;
         if (st === 'loaded' || st === 'loading') continue;
@@ -892,7 +952,7 @@
 
     function pumpPreloadQueue() {
       if (!IS_HOST) return;
-      if (preloadPaused) return; // ✅ 当前图加载期间不启动预加载（绝对优先）
+      if (preloadPaused) return;
       while (preloadInFlight < PRELOAD_CONCURRENCY && preloadQueue.length > 0) {
         const url = preloadQueue.shift();
         if (!url) continue;
@@ -1025,15 +1085,17 @@
     function openHelp() { if (!IS_HOST) return; document.getElementById('helpModal').classList.add('active'); }
     function closeHelp() { document.getElementById('helpModal').classList.remove('active'); }
 
-    // ========== 同步 ==========
+    // ========== 同步（✅ 增加 rows/cols 以确保玩家端网格一致） ==========
     function getGameState() {
       return {
-        v: 4,
+        v: 5,
         ts: Date.now(),
         currentImageIndex,
         currentRound,
         imageUrls,
         players,
+        rows: ROWS,
+        cols: COLS,
         revealedCells: Array.from(revealedCells),
         answerRevealed
       };
@@ -1050,6 +1112,21 @@
       if (Array.isArray(state.imageUrls)) imageUrls = state.imageUrls;
       if (Array.isArray(state.players)) players = state.players;
       if (typeof state.answerRevealed === 'boolean') answerRevealed = state.answerRevealed;
+
+      if (typeof state.rows === 'number' && typeof state.cols === 'number') {
+        ROWS = Math.max(1, Math.floor(state.rows));
+        COLS = Math.max(1, Math.floor(state.cols));
+        TOTAL_CELLS = ROWS * COLS;
+
+        const overlay = document.getElementById('gridOverlay');
+        if (overlay) {
+          overlay.style.gridTemplateColumns = `repeat(${COLS}, 1fr)`;
+          overlay.style.gridTemplateRows = `repeat(${ROWS}, 1fr)`;
+        }
+        const totalEl = document.getElementById('totalCells');
+        if (totalEl) totalEl.textContent = String(TOTAL_CELLS);
+        ensureGrid(true);
+      }
 
       const nextImageIndex = Number(state.currentImageIndex || 0);
       const nextRound = Number(state.currentRound || 0);
@@ -1081,7 +1158,7 @@
       }
 
       if (imageUrls.length > 0) {
-        if (IS_HOST) updatePreloadWindow(currentImageIndex); // ✅ Host 预加载（Player 不预加载）
+        if (IS_HOST) updatePreloadWindow(currentImageIndex);
 
         ensureGrid();
 
@@ -1090,7 +1167,7 @@
             showCurtain();
             resetCellsNoTransition();
             loadImage(currentImageIndex, () => {
-              ensureGrid();
+              ensureGrid(true);
               renderGridFromState();
               updateStatus();
               updateButtonsByState();
@@ -1174,6 +1251,10 @@
 
       document.getElementById('scoreboardActions').style.display = IS_HOST ? 'flex' : 'none';
 
+      // 默认显示 “45”
+      const totalEl = document.getElementById('totalCells');
+      if (totalEl) totalEl.textContent = String(TOTAL_CELLS);
+
       if (IS_HOST) {
         if (imageUrls.length > 0 && players.length > 0) {
           showCurtain();
@@ -1184,7 +1265,7 @@
             updateButtonsByState();
             broadcastState('init');
           });
-          updatePreloadWindow(0); // ✅ Host 预加载窗口
+          updatePreloadWindow(0);
         } else {
           updateButtonsByState();
           setLoadingUI(true, '请先设置玩家和图片', '');
@@ -1206,6 +1287,16 @@
       }
 
       window.addEventListener('resize', function () {
+        // ✅ 窗口变化时重新计算 wrapper 尺寸（保持竖图“固定 16:9 高度”的规则）
+        const natW = IS_HOST
+          ? (document.getElementById('gameImage')?.naturalWidth || 0)
+          : (playerImg.naturalWidth || 0);
+        const natH = IS_HOST
+          ? (document.getElementById('gameImage')?.naturalHeight || 0)
+          : (playerImg.naturalHeight || 0);
+
+        if (natW > 0 && natH > 0) fitWrapperBy16x9Rule(natW, natH);
+
         if (!IS_HOST) {
           ensurePlayerCanvasSized();
           drawPlayerCanvasFromState();
@@ -1268,7 +1359,17 @@
       isFullImageMode = false;
       answerRevealed = false;
 
-      resetPreloadAll(); // ✅ 清空预加载窗口状态
+      // 回到默认横图网格
+      ROWS = 5; COLS = 9; TOTAL_CELLS = ROWS * COLS;
+      const totalEl = document.getElementById('totalCells');
+      if (totalEl) totalEl.textContent = String(TOTAL_CELLS);
+      const overlay = document.getElementById('gridOverlay');
+      if (overlay) {
+        overlay.style.gridTemplateColumns = `repeat(${COLS}, 1fr)`;
+        overlay.style.gridTemplateRows = `repeat(${ROWS}, 1fr)`;
+      }
+
+      resetPreloadAll();
 
       imageLoadToken++;
       if (loadingWarnTimer) clearTimeout(loadingWarnTimer);
@@ -1432,7 +1533,6 @@
       answerRevealed = false;
       resetProgressForNewImage(0);
 
-      // ✅ 新题库：重置预加载窗口（避免旧 cache 干扰）
       resetPreloadAll();
 
       updateStatus();
@@ -1445,7 +1545,6 @@
 
       await new Promise((resolve) => { loadImage(0, () => resolve()); });
 
-      // ✅ 当前图结束后再启动窗口预加载（Host）
       updatePreloadWindow(0);
 
       closeSaveLoadingModal();
@@ -1493,9 +1592,7 @@
       const url = imageUrls[index];
 
       if (IS_HOST) {
-        // ✅ 当前图绝对优先：加载当前图期间暂停启动预加载
         setPreloadPaused(true);
-        // ✅ 更新窗口目标（队列准备好，但 paused 不会启动预加载请求）
         updatePreloadWindow(index);
 
         const img = document.getElementById('gameImage');
@@ -1516,6 +1613,12 @@
           if (token !== imageLoadToken) return;
           if (loadingWarnTimer) clearTimeout(loadingWarnTimer);
 
+          // ✅ 先按“16:9 高度规则”确定显示尺寸
+          fitWrapperBy16x9Rule(img.naturalWidth || 16, img.naturalHeight || 9);
+
+          // ✅ 再按长宽比固定网格（竖 6×9 / 横 9×5）
+          setGridByAspect(img.naturalWidth || 16, img.naturalHeight || 9, true);
+
           wrapper.style.display = 'inline-block';
           wrapper.style.visibility = 'visible';
           wrapper.style.minHeight = '';
@@ -1529,9 +1632,11 @@
 
           hideCurtain();
 
-          // ✅ 当前图加载完成：恢复预加载，并让窗口跟随当前图
           setPreloadPaused(false);
           updatePreloadWindow(currentImageIndex);
+
+          // ✅ 网格/显示规则可能改变，广播给玩家端
+          broadcastState('image_loaded');
         };
 
         img.onerror = function () {
@@ -1547,19 +1652,19 @@
 
           if (typeof onDone === 'function') onDone();
 
-          // ✅ 失败也恢复预加载（以免卡死在 paused）
           setPreloadPaused(false);
           updatePreloadWindow(currentImageIndex);
+
+          broadcastState('image_error');
         };
 
-        // 可选：降低 Referer 导致的防盗链概率（成本低）
         try { img.referrerPolicy = 'no-referrer'; } catch (e) {}
 
         img.src = url;
         return;
       }
 
-      // Player: 离屏加载到 playerImg，然后 canvas 白名单绘制（✅ 不预加载）
+      // Player: 离屏加载到 playerImg，然后 canvas 白名单绘制（不预加载）
       playerImgReady = false;
       drawPlayerCanvasFromState();
 
@@ -1571,6 +1676,12 @@
 
         playerImgReady = true;
         playerCurrentUrl = url;
+
+        // ✅ 同 Host 的显示规则
+        fitWrapperBy16x9Rule(playerImg.naturalWidth || 16, playerImg.naturalHeight || 9);
+
+        // ✅ 同 Host 的网格规则（竖 6×9 / 横 9×5）
+        setGridByAspect(playerImg.naturalWidth || 16, playerImg.naturalHeight || 9, false);
 
         ensurePlayerCanvasSized();
         setLoadingUI(false);
@@ -1643,7 +1754,10 @@
       if (answerRevealed) return;
       if (revealedCells.has(index)) return;
 
-      const cell = document.querySelectorAll('.grid-cell')[index];
+      const cells = document.querySelectorAll('.grid-cell');
+      const cell = cells[index];
+      if (!cell) return;
+
       if (selectedCells.includes(index)) {
         selectedCells = selectedCells.filter(i => i !== index);
         cell.classList.remove('selected');
@@ -1785,6 +1899,9 @@
       document.getElementById('totalImages').textContent = imageUrls.length;
       document.getElementById('currentRound').textContent = currentRound;
       document.getElementById('revealedCount').textContent = revealedCells.size;
+
+      const totalEl = document.getElementById('totalCells');
+      if (totalEl) totalEl.textContent = String(TOTAL_CELLS);
 
       if (IS_HOST) {
         const ready = (imageUrls.length > 0 && players.length > 0);
